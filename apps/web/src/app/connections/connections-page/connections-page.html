@@ -30,6 +30,22 @@
     @if (page.refreshing) {
       <mat-progress-bar mode="indeterminate" aria-label="Refreshing connections" />
     }
+    @if (blockedDelete(); as blocked) {
+      <div class="blocked" role="alert">
+        <p>
+          "{{ blocked.connectionLabel }}" was not deleted because these alerts send to it. Remove it
+          from them first:
+        </p>
+        <ul>
+          @for (alert of blocked.alerts; track alert.id) {
+            <li>
+              <a [routerLink]="['/alerts', alert.id]">{{ alert.name }}</a>
+            </li>
+          }
+        </ul>
+        <button mat-button type="button" (click)="blockedDelete.set(null)">Dismiss</button>
+      </div>
+    }
     @if (page.connections.length === 0) {
       <div class="state">
         <p>You have no connections yet. Add one to start receiving alerts.</p>

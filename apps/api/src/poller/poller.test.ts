@@ -64,6 +64,7 @@ describe('poller', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('stores normalised items and reports the counts', async () => {
@@ -163,5 +164,35 @@ describe('poller', () => {
     stop();
     await vi.advanceTimersByTimeAsync(30_000);
     expect(a.state.fetches).toBe(2);
+  });
+
+  // testing.md S3-14
+  it('hands only newly stored events to onNewEvents', async () => {
+    const received: string[][] = [];
+    const notifying = createPoller(db, createSourceRegistry([a.source]), {
+      onNewEvents: (events) => {
+        received.push(events.map((e) => e.sourceEventId));
+        return Promise.resolve();
+      },
+    });
+
+    await notifying.pollSource(a.source);
+    await notifying.pollSource(a.source); // nothing new: no call
+    a.state.items.push(item('3'));
+    await notifying.pollSource(a.source);
+
+    expect(received).toEqual([['1', '2'], ['3']]);
+  });
+
+  it('keeps the poll ok when onNewEvents fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const notifying = createPoller(db, createSourceRegistry([a.source]), {
+      onNewEvents: () => Promise.reject(new Error('dispatch broke')),
+    });
+
+    const result = await notifying.pollSource(a.source);
+
+    expect(result.status).toBe('ok');
+    expect(sourceRow(db, 'a')).toMatchObject({ last_error: null });
   });
 });

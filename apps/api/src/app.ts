@@ -3,8 +3,10 @@ import { SEVERITIES, type ApiError, type HealthResponse } from '@alerts/shared';
 import { authenticate } from './auth/auth.middleware.ts';
 import type { ChannelRegistry } from './channels/registry.ts';
 import type { Db } from './db/database.ts';
+import type { Dispatcher } from './dispatcher/dispatcher.ts';
 import type { Poller } from './poller/poller.ts';
 import { adminRoutes } from './routes/admin.routes.ts';
+import { alertRoutes } from './routes/alerts.routes.ts';
 import { connectionRoutes } from './routes/connections.routes.ts';
 import { meRoutes } from './routes/me.routes.ts';
 import { publicRoutes } from './routes/public.routes.ts';
@@ -15,6 +17,7 @@ export interface AppDeps {
   channels: ChannelRegistry;
   sources: SourceRegistry;
   poller: Poller;
+  dispatcher: Dispatcher;
 }
 
 function isBadJson(err: unknown): boolean {
@@ -34,7 +37,7 @@ function handleError(err: unknown, _req: Request, res: Response, _next: NextFunc
   res.status(500).json(body);
 }
 
-export function createApp({ db, channels, sources, poller }: AppDeps): express.Express {
+export function createApp({ db, channels, sources, poller, dispatcher }: AppDeps): express.Express {
   const app = express();
   app.use(express.json());
 
@@ -45,9 +48,10 @@ export function createApp({ db, channels, sources, poller }: AppDeps): express.E
   app.use('/api', publicRoutes(db));
 
   app.use('/api', authenticate(db));
-  app.use('/api', meRoutes());
+  app.use('/api', meRoutes(db));
   app.use('/api', connectionRoutes(db, channels));
-  app.use('/api', adminRoutes(sources, poller));
+  app.use('/api', alertRoutes(db, sources));
+  app.use('/api', adminRoutes({ db, sources, poller, dispatcher }));
 
   app.use(handleError);
   return app;

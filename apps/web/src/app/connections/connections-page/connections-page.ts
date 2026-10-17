@@ -1,11 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import type { ApiError, ChannelConnection, ChannelDescriptor } from '@alerts/shared';
+import type {
+  ApiError,
+  ChannelConnection,
+  ChannelDescriptor,
+  ConnectionInUseError,
+} from '@alerts/shared';
 import { ConnectionsApi } from '../../core/connections-api';
 import { CurrentUser } from '../../core/current-user';
 import { ConnectionList } from '../connection-list/connection-list';
@@ -24,6 +30,20 @@ type PageView =
       refreshing: boolean;
     };
 
+/** A delete the API refused with 409 because alerts still use the connection (D6). */
+interface BlockedDelete {
+  connectionLabel: string;
+  alerts: ConnectionInUseError['alerts'];
+}
+
+function inUseError(error: unknown): ConnectionInUseError | undefined {
+  if (!(error instanceof HttpErrorResponse) || error.status !== 409) return undefined;
+  const body = error.error as Partial<ConnectionInUseError> | null;
+  return Array.isArray(body?.alerts)
+    ? { message: body.message ?? '', alerts: body.alerts }
+    : undefined;
+}
+
 function apiMessage(error: unknown, fallback: string): string {
   const body =
     error instanceof HttpErrorResponse ? (error.error as Partial<ApiError> | null) : null;
@@ -33,7 +53,7 @@ function apiMessage(error: unknown, fallback: string): string {
 /** Page: loads the current user's connections and channels; handles add/edit/delete/test. */
 @Component({
   selector: 'app-connections-page',
-  imports: [MatButtonModule, MatProgressBarModule, ConnectionList],
+  imports: [RouterLink, MatButtonModule, MatProgressBarModule, ConnectionList],
   templateUrl: './connections-page.html',
   styleUrl: './connections-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,6 +97,12 @@ export class ConnectionsPage {
     computation: () => ({}),
   });
 
+  /** The last delete blocked by alerts (D6); cleared on the next delete or user switch. */
+  protected readonly blockedDelete = linkedSignal<string | undefined, BlockedDelete | null>({
+    source: this.currentUser.userId,
+    computation: () => null,
+  });
+
   /** Reloads only the requests that failed. */
   protected retry(): void {
     for (const resource of [this.channels, this.connections]) {
@@ -102,12 +128,18 @@ export class ConnectionsPage {
 
   protected remove(connection: ChannelConnection): void {
     if (!confirm(`Delete the connection "${connection.label}"?`)) return;
+    this.blockedDelete.set(null);
     this.api.remove(connection.id).subscribe({
       next: () => {
         this.connections.reload();
         this.snackBar.open(`Deleted "${connection.label}".`, undefined, { duration: 3000 });
       },
       error: (error: unknown) => {
+        const inUse = inUseError(error);
+        if (inUse) {
+          this.blockedDelete.set({ connectionLabel: connection.label, alerts: inUse.alerts });
+          return;
+        }
         this.connections.reload();
         this.snackBar.open(apiMessage(error, 'Could not delete the connection.'), 'Dismiss');
       },

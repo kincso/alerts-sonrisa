@@ -1,0 +1,65 @@
+<ul class="list">
+  @for (row of rows(); track row.alert.id) {
+    <li class="item" [class.paused]="!row.alert.active">
+      <div class="info">
+        <h3 class="name">{{ row.alert.name }}</h3>
+        <dl class="meta">
+          <div>
+            <dt>Source</dt>
+            <dd>{{ row.source }}</dd>
+          </div>
+          <div>
+            <dt>Keywords</dt>
+            <dd>{{ row.keywords }}</dd>
+          </div>
+          <div>
+            <dt>Severity</dt>
+            <dd>{{ row.severity }}</dd>
+          </div>
+          <div>
+            <dt>Sends to</dt>
+            <dd>{{ row.targets }}</dd>
+          </div>
+        </dl>
+      </div>
+      <div class="status">
+        <mat-slide-toggle
+          [checked]="row.checked"
+          [disabled]="row.state?.kind === 'pending'"
+          (change)="activeChange.emit({ alert: row.alert, active: $event.checked })"
+        >
+          {{ row.checked ? 'Active' : 'Paused'
+          }}<span class="cdk-visually-hidden">: {{ row.alert.name }}</span>
+        </mat-slide-toggle>
+        <p class="toggle-state" aria-live="polite">
+          @if (row.state?.kind === 'pending') {
+            Saving…
+          }
+        </p>
+        @if (row.state; as state) {
+          @if (state.kind === 'error') {
+            <p class="toggle-error" role="alert">{{ state.message }}</p>
+          }
+        }
+      </div>
+      <div class="actions">
+        <a
+          mat-button
+          [routerLink]="['/alerts', row.alert.id]"
+          [attr.aria-label]="'Edit ' + row.alert.name"
+        >
+          Edit
+        </a>
+        <button
+          mat-button
+          type="button"
+          class="delete"
+          [attr.aria-label]="'Delete ' + row.alert.name"
+          (click)="remove.emit(row.alert)"
+        >
+          Delete
+        </button>
+      </div>
+    </li>
+  }
+</ul>

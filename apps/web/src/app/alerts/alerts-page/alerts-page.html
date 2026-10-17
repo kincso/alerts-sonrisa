@@ -1,0 +1,42 @@
+@let page = view();
+<section class="page" aria-labelledby="alerts-title">
+  <header class="header">
+    <div>
+      <h2 id="alerts-title">Alerts</h2>
+      <p class="intro">Each alert watches one source and sends matches to your connections.</p>
+    </div>
+    @if (page.status === 'ready' && page.alerts.length > 0) {
+      <a mat-flat-button routerLink="/alerts/new">New alert</a>
+    }
+  </header>
+
+  @if (page.status === 'idle') {
+    <p>Pick a user in "Acting as" to see their alerts.</p>
+  } @else if (page.status === 'loading') {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading alerts" />
+  } @else if (page.status === 'error') {
+    <div class="state" role="alert">
+      <p>Could not load your alerts.</p>
+      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+    </div>
+  } @else if (page.status === 'ready') {
+    @if (page.refreshing) {
+      <mat-progress-bar mode="indeterminate" aria-label="Refreshing alerts" />
+    }
+    @if (page.alerts.length === 0) {
+      <div class="state">
+        <p>You have no alerts yet.</p>
+        <a mat-flat-button routerLink="/alerts/new">New alert</a>
+      </div>
+    } @else {
+      <app-alert-list
+        [alerts]="page.alerts"
+        [sources]="page.sources"
+        [connections]="page.connections"
+        [toggleStates]="toggleStates()"
+        (activeChange)="setActive($event)"
+        (remove)="remove($event)"
+      />
+    }
+  }
+</section>

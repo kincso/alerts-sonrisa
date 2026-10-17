@@ -1,6 +1,6 @@
 import type { Event } from '@alerts/shared';
 import type { NewEvent } from '../sources/source.ts';
-import { newId, now, type Db } from './database.ts';
+import { newId, now, optionalText, severity, text, type Db, type Row } from './database.ts';
 
 /**
  * Stores events, skipping any already stored for (source_id, source_event_id) (A7).
@@ -30,4 +30,29 @@ export function insertNewEvents(db: Db, sourceId: string, events: readonly NewEv
     if (changes > 0) inserted.push(event);
   }
   return inserted;
+}
+
+function toEvent(row: Row): Event {
+  return {
+    id: text(row, 'id'),
+    sourceId: text(row, 'source_id'),
+    sourceEventId: text(row, 'source_event_id'),
+    title: text(row, 'title'),
+    summary: text(row, 'summary'),
+    url: optionalText(row, 'url'),
+    severity: severity(row, 'severity'),
+    occurredAt: text(row, 'occurred_at'),
+    receivedAt: text(row, 'received_at'),
+  };
+}
+
+export function findEventBySourceEventId(
+  db: Db,
+  sourceId: string,
+  sourceEventId: string,
+): Event | undefined {
+  const row = db
+    .prepare('SELECT * FROM events WHERE source_id = ? AND source_event_id = ?')
+    .get(sourceId, sourceEventId);
+  return row ? toEvent(row) : undefined;
 }

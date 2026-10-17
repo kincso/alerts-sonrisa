@@ -1,4 +1,4 @@
-import type { Event, SourceId } from '@alerts/shared';
+import type { Event, Severity, SourceId } from '@alerts/shared';
 
 /** What `normalise` returns: an Event before it is stored (no id, no receivedAt yet). */
 export type NewEvent = Omit<Event, 'id' | 'sourceId' | 'receivedAt'>;
@@ -10,6 +10,8 @@ export type NewEvent = Omit<Event, 'id' | 'sourceId' | 'receivedAt'>;
 export interface Source {
   id: SourceId;
   label: string;
+  /** Set when `normalise` gives every item this severity; shown in the alert form (S3-3). */
+  fixedSeverity?: Severity;
   /** I/O only. Must respect `signal`. */
   fetchRaw(signal: AbortSignal): Promise<string>;
   /** Pure. Skips a malformed item; throws if the whole feed can't be parsed. */

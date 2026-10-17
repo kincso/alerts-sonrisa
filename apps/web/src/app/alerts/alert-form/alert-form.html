@@ -1,0 +1,94 @@
+@let controls = form.controls;
+<form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <mat-form-field>
+    <mat-label>Name</mat-label>
+    <input matInput formControlName="name" required autocomplete="off" />
+    <mat-hint>For example "Big quakes in Peru".</mat-hint>
+    @if (controls.name.hasError('required')) {
+      <mat-error>Name is required.</mat-error>
+    } @else if (controls.name.hasError('server')) {
+      <mat-error>{{ controls.name.getError('server') }}</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Source</mat-label>
+    <mat-select formControlName="sourceId" required>
+      @for (source of sources(); track source.id) {
+        <mat-option [value]="source.id">
+          {{ source.label }}{{ source.enabled ? '' : ' (disabled by admin)' }}
+        </mat-option>
+      }
+    </mat-select>
+    @if (controls.sourceId.hasError('required')) {
+      <mat-error>Choose a source.</mat-error>
+    } @else if (controls.sourceId.hasError('server')) {
+      <mat-error>{{ controls.sourceId.getError('server') }}</mat-error>
+    }
+  </mat-form-field>
+
+  <!-- dynamic: the longer hints wrap instead of being clipped at narrow widths -->
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Keywords</mat-label>
+    <mat-chip-grid #keywordGrid formControlName="keywords" aria-label="Keywords">
+      @for (keyword of controls.keywords.value; track keyword) {
+        <mat-chip-row (removed)="removeKeyword(keyword)">
+          {{ keyword }}
+          <button matChipRemove type="button" [attr.aria-label]="'Remove keyword ' + keyword">
+            <mat-icon fontSet="material-symbols-outlined" aria-hidden="true">cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+      }
+      <input
+        placeholder="Type a keyword, then Enter"
+        autocomplete="off"
+        [matChipInputFor]="keywordGrid"
+        [matChipInputSeparatorKeyCodes]="separatorKeys"
+        [matChipInputAddOnBlur]="true"
+        (matChipInputTokenEnd)="addKeyword($event)"
+      />
+    </mat-chip-grid>
+    <mat-hint>Optional. Matches if any keyword is in the title or summary (any case).</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Minimum severity</mat-label>
+    <mat-select formControlName="minSeverity" required>
+      @for (severity of severities; track severity) {
+        <mat-option [value]="severity">{{ severityLabel(severity) }}</mat-option>
+      }
+    </mat-select>
+    @if (fixedSeverityHint(); as hint) {
+      <mat-hint class="fixed-hint">{{ hint }}</mat-hint>
+    }
+    @if (controls.minSeverity.hasError('server')) {
+      <mat-error>{{ controls.minSeverity.getError('server') }}</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Send to</mat-label>
+    <mat-select formControlName="connectionIds" multiple required>
+      @for (connection of connections(); track connection.id) {
+        <mat-option [value]="connection.id">{{ connection.label }}</mat-option>
+      }
+    </mat-select>
+    <mat-hint>One or more of your connections.</mat-hint>
+    @if (controls.connectionIds.hasError('required')) {
+      <mat-error>Choose at least one connection.</mat-error>
+    } @else if (controls.connectionIds.hasError('server')) {
+      <mat-error>{{ controls.connectionIds.getError('server') }}</mat-error>
+    }
+  </mat-form-field>
+
+  @for (message of otherErrors(); track message) {
+    <p class="form-error" role="alert">{{ message }}</p>
+  }
+
+  <div class="actions">
+    <ng-content />
+    <button mat-flat-button type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : 'Save alert' }}
+    </button>
+  </div>
+</form>
