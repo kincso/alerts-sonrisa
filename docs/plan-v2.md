@@ -117,6 +117,7 @@ Tasks
   - Email: Nodemailer using SMTP from env vars when set, otherwise **log-only**, with the rendered message stored and served at a preview link (A10).
   - Slack: Incoming Webhook POST, dry run without a URL (A11).
   - `/me/connections` CRUD (A13) + `POST /me/connections/:id/test` (A18).
+  - **(revised 2026-10-17)** The `deliveries` table is created here: "Send test" writes a `kind = 'test'` delivery row (decisions.md DS8).
   - 10s send timeout on both channels.
 - **FE (1.75):**
   - App shell + "Acting as" switcher, labelled as a mock.
@@ -151,13 +152,14 @@ Tasks (BE)
   - unique on `sourceId + sourceEventId` (A7);
   - per-source `lastPollAt / lastError`.
 - `POST /admin/sources/:id/poll` ("poll now") so checks don't depend on waiting.
-- Baseline rule (open flag F4): items with `occurredAt` before the source was enabled are stored but not matched.
+- Baseline rule (F4, decided by D7): items with `occurredAt` before the source's `enabled_at` are stored but not matched. `enabled_at` is set on seed and each time the admin re-enables the source.
 - Unit tests on saved fixture files.
 
 Validation
 - The fixture tests pass (field mapping, bands, BBC → `medium`).
 - With `POLL_INTERVAL_MS=15000`: two cycles → events grow, with no duplicates.
 - A bad feed URL → `lastError` is set and the poller keeps running.
+- **F6 check (added 2026-10-17):** save the BBC feed at least twice, a few hours apart. Compare the `<guid>`s of the same article URL and record in `testing.md` whether the `#n` suffix changed (decisions.md DS9).
 
 Commit: `feat(api): USGS and BBC source adapters with interval poller`
 
@@ -167,8 +169,8 @@ Commit: `feat(api): USGS and BBC source adapters with interval poller`
 Tasks
 - **BE (1.0):**
   - `/me/alerts` CRUD (A14); `GET /sources`.
-  - An `alert_connections` join table with `ON DELETE CASCADE`. This is a proposal for A13's open point and is logged.
-  - `matchAlert` pure function: source + keywords (empty = all, any-of, open flag F5) + `severity ≥ minSeverity` (A1).
+  - An `alert_connections` join table. Deleting a connection that alerts still use is blocked: `DELETE /me/connections/:id` returns 409 with the names of those alerts (A13, decided by D6). **(revised 2026-10-17)** Was "`ON DELETE CASCADE`", the proposal for A13.
+  - `matchAlert` pure function: source + keywords (empty = all; any-of, case-insensitive substring in title + summary, decided by D8) + `severity ≥ minSeverity` (A1).
   - Dispatcher: new events → active alerts on enabled sources → enabled channel types → skip if (alert, event, connection) has already been delivered (A7, D3) → send once, **no retry** (A16 allows zero) → `Delivery` row with status and error (A16).
   - Immediate sending, per A6.
   - `POST /admin/simulate-event` with an optional `sourceEventId` (A18). `GET /me/deliveries`.
@@ -178,14 +180,14 @@ Tasks
   - Alert form:
     - name, source, keyword chips, min severity, connection multi-select;
     - a hint that BBC items are always `medium` (D1);
-    - a warning on alerts that have no connections left.
+    - the connections page shows the 409 "used by these alerts" error when a delete is blocked (D6). **(revised 2026-10-17)** Was "a warning on alerts that have no connections left".
   - Component test: alert form validation.
 
 Validation
 - In the browser: create an alert on USGS, min `medium` → simulate a matching event (curl or `.http`) → a `Delivery` row for each connection; the email preview link opens; Slack is real or `dry-run`.
 - Simulate again with the same `sourceEventId` → no new delivery.
 - Paused alert → nothing is sent.
-- Delete a connection → the alert shows the warning.
+- Delete a connection that an alert uses → 409, the UI names the alert, and the connection stays. Remove it from the alert, then delete → success.
 - Unit tests: empty keywords, case, any-of, severity order, paused alert, wrong source, dedupe.
 
 Commit: `feat: alerts CRUD, matcher and delivery pipeline end-to-end`
@@ -240,6 +242,7 @@ Slices S0–S5.
 - **One retry on failed sends** (moved here now; A16 allows "at most one", so zero is within the default).
 - Generic webhook channel (A12).
 - Optional threshold fields on rules (A1).
+- **Per-alert keyword mode (any/all)** (added by D8).
 
 ### Moved to Stretch / Out of scope by this re-plan (listed so nothing shrinks silently)
 
@@ -327,7 +330,7 @@ Never cut: the pipeline, the generated form (A12), simulate event (A18), the adm
 | 9h plan, 1h buffer, ≥ 5h frontend | D5, re-plan instructions |
 | Switcher, `X-User-Id`, `CurrentUserService`, `requireAdmin` + one guard | A8 |
 | Registry, `GET /channels`, generated form, fake-channel test | A12 |
-| Per-user connections, cascade on delete (proposal) | A13 |
+| Per-user connections, delete blocked while in use | A13, D6 |
 | SMTP or log-only email with a preview link | A10 |
 | Slack webhook, dry run | A11 |
 | Source interface, USGS + BBC | A2 |
@@ -348,8 +351,10 @@ Never cut: the pipeline, the generated form (A12), simulate event (A18), the adm
 - **F1:** A3 still describes CoinGecko as the default, although A2 defers markets.
 - **F2:** A21's region filter vs A1's rule shape.
 - **F3:** A14's wording still says "threshold".
-- **F4:** the baseline rule (S2 proposes event time vs. the time the source was enabled).
-- **F5:** keyword any-of.
-- **A13:** what happens to alerts when a connection is deleted (S3 proposes cascade + a warning).
+- ~~**F4:** the baseline rule.~~ Closed by D7 (2026-10-17): match only events with `occurredAt ≥ sources.enabled_at`.
+- ~~**F5:** keyword any-of.~~ Closed by D8 (2026-10-17): any-of. A per-alert any/all choice is Stretch.
+- ~~**A13:** what happens to alerts when a connection is deleted.~~ Closed by D6 (2026-10-17): the delete is blocked while alerts use the connection.
+
+- **F6:** whether the BBC `<guid>` `#n` suffix changes when a story is updated. The MVP uses the full guid (DS9); verify it in S2.
 
 These change no Group A decision, but `assumptions.md` should record them before or during the slice that needs them.
