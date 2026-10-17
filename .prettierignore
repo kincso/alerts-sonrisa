@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.angular/
+coverage/
+package-lock.json
+# Docs are hand-written; keep their table layout as authored
+*.md

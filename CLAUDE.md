@@ -22,7 +22,7 @@ Evaluation focuses on process and judgment. Code must be readable and defensible
 - npm workspaces: apps/web (Angular; version recorded in decisions.md in S0),
   apps/api (Express + TypeScript, run with tsx), packages/shared (types plus
   small runtime constants such as `SEVERITIES`; no logic)
-- Node ≥ 22.13, pinned via .nvmrc and `engines`
+- Node `^22.22.3 || >=24.15.0` (required by Angular 22; decisions.md S0-2), pinned via .nvmrc and `engines`
 - SQLite via `node:sqlite` (built-in, no native modules); schema in
   apps/api/src/db/schema.sql
 - Angular Material + SCSS
