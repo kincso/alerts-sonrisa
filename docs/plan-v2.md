@@ -72,13 +72,15 @@ Times are in hours. **FE** = frontend, **BE** = backend, **CI** = local test gat
 
 | # | Slice | FE | BE | CI | Doc | Estimate | Actual | Done by (cumulative) |
 |---|---|---|---|---|---|---|---|---|
-| S0 | Scaffold + sync the source of truth | 0.25 | 0.65 | 0.1 | 0.25 | 1.25 | | 1.25 |
-| S1 | Identity + channel connections + Send test | 1.75 | 0.75 | – | 0.1 | 2.6 | | 3.85 |
-| S2 | Sources + poller | – | 0.75 | – | 0.1 | 0.85 | | 4.7 |
+| S0 | Scaffold + sync the source of truth | 0.25 | 0.65 | 0.1 | 0.25 | 1.25 | 0.75 | 1.25 |
+| S1 | Identity + channel connections + Send test | 1.75 | 0.75 | – | 0.1 | 2.6 | 1.15 | 3.85 |
+| S2 | Sources + poller | – | 0.75 | – | 0.1 | 0.85 | 0.35 | 4.7 |
 | S3 | Alerts + matcher + delivery pipeline (end-to-end) | 1.25 | 1.0 | – | 0.1 | 2.35 | | 7.05 |
 | S4 | History + admin view + a11y pass | 1.75 | 0.15 | – | 0.1 | 2.0 | | 9.05 |
 | S5 | Docs wrap-up + fresh-clone check | – | – | – | 0.5 | 0.5 | | 9.55 |
 | | **Total** | **5.0** | **3.3** | **0.1** | **1.15** | **9.55** | | |
+
+**Actual** (added 2026-10-18, S2 review M2) is taken from commit times: from the previous merge to the slice's merge (S0, S1) or to the slice commit (S2, before its review). S0 and S1 include their review and fixes; S2 does not yet. Reading or setup before the first session is not counted, so these are lower bounds. After S2: 2.25h actual against 4.7h estimated, so no cut from the cut order is due before S3.
 
 ### S0 – Scaffold + sync the source of truth · 1.25h
 **Goal:** the tooling risk (workspaces + Angular + shared package + `node:sqlite`) is proven, and the docs agree with each other before any feature code exists.
@@ -165,6 +167,8 @@ Commit: `feat(api): USGS and BBC source adapters with interval poller`
 
 ### S3 – Alerts + matcher + delivery pipeline (end-to-end) · 2.35h
 **Goal:** event → matching alert → email/Slack → delivery log, using endpoints that already exist (S1) or are built here.
+
+> **Reminder before starting S3 (F6, decisions.md S2-6):** take the second BBC snapshot (`curl -o process/f6/bbc-world-<UTC time>.xml https://feeds.bbci.co.uk/news/world/rss.xml`), compare its guids with snapshot 1 in `process/f6/`, and record the result in testing.md S2-12.
 
 Tasks
 - **BE (1.0):**

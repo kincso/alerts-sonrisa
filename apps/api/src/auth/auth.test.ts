@@ -12,7 +12,7 @@ describe('authenticate + requireAdmin', () => {
 
   beforeAll(() => {
     const db = openDatabase(':memory:');
-    seed(db, []);
+    seed(db, [], []);
     const app = express();
     app.use(authenticate(db));
     app.get('/whoami', (req, res) => {

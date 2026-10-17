@@ -1,0 +1,47 @@
+import { XMLParser } from 'fast-xml-parser';
+import { isRecord } from '../util/is-record.ts';
+import { fetchText, type NewEvent, type Source } from './source.ts';
+
+const FEED_URL = 'https://feeds.bbci.co.uk/news/world/rss.xml';
+
+// Attributes (e.g. guid isPermaLink) are ignored, so <guid> parses to its text.
+// Values stay strings (no number parsing), and `item` is always an array.
+const parser = new XMLParser({ parseTagValue: false, isArray: (name) => name === 'item' });
+
+function textOf(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+/** One RSS item → event, or undefined if guid, title or date is missing (design.md §6). */
+function toEvent(item: unknown): NewEvent | undefined {
+  if (!isRecord(item)) return undefined;
+  const guid = textOf(item['guid']);
+  const title = textOf(item['title']);
+  const pubDate = textOf(item['pubDate']);
+  const time = pubDate === undefined ? NaN : Date.parse(pubDate);
+  if (!guid || !title || Number.isNaN(time)) return undefined;
+  return {
+    sourceEventId: guid, // full guid including #n (DS9, F6)
+    title,
+    summary: textOf(item['description']) ?? '',
+    url: textOf(item['link']),
+    severity: 'medium', // news has no severity signal yet (D1); set only here
+    occurredAt: new Date(time).toISOString(),
+  };
+}
+
+function normalise(raw: string): NewEvent[] {
+  const doc: unknown = parser.parse(raw);
+  const channel = isRecord(doc) && isRecord(doc['rss']) ? doc['rss']['channel'] : undefined;
+  if (!isRecord(channel)) throw new Error('BBC feed is not an RSS channel');
+  const items = channel['item'] ?? [];
+  if (!Array.isArray(items)) throw new Error('BBC feed items could not be read');
+  return items.map(toEvent).filter((e): e is NewEvent => e !== undefined);
+}
+
+export const bbcSource: Source = {
+  id: 'bbc',
+  label: 'BBC World News',
+  fetchRaw: (signal) => fetchText(FEED_URL, signal),
+  normalise,
+};

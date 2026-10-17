@@ -95,13 +95,22 @@ Evaluation focuses on process and judgment. Code must be readable and defensible
 - Pure logic (rule matcher, normalizers, dedupe check) is written as pure
   functions with unit tests. Write the test cases first (in testing.md and
   as tests), then the implementation.
+- Test-first must be visible in git (S2 review M1). Each slice starts with
+  its own commit `test: <slice> cases`: the slice's testing.md rows (Expected
+  filled in, Actual and Status empty) and the unit tests for its pure logic.
+  Code the tests need is added as stubs that throw `not implemented`, so
+  typecheck and lint pass and the tests fail on behaviour. The implementation
+  commit comes next and makes them pass. Results go into testing.md only in
+  or after the implementation commit.
 - Tests check behaviour, not implementation details. Don't mock the unit
   being tested.
 - Component tests only where plan-v2 lists them (generated form, alert form).
 
 ## Quality gates (run them yourself)
 - After every change, run typecheck, lint and tests for the affected app,
-  and report the results. Fix failures before saying you're done.
+  and report the results. Fix failures before saying you're done. The one
+  exception is the test-first commit: its new tests are expected to fail.
+  Report them as expected failures; everything else must pass.
 - If the same thing fails twice, stop and explain the problem instead of
   trying random fixes.
 
@@ -129,7 +138,8 @@ Evaluation focuses on process and judgment. Code must be readable and defensible
 - Don't edit docs/ or process/ unless I ask. The Doc tasks of the current
   slice count as asked, but propose the edits first.
 - Never commit or push without asking me first. Use the commit message
-  given for the slice in plan-v2.md.
+  given for the slice in plan-v2.md. The test-first commit (see Testing)
+  comes before it and also needs my OK.
 
 ## Reviewing documentation
 When I ask you to review a doc, always follow these rules:

@@ -3,7 +3,7 @@ import type { Db } from '../db/database.ts';
 import { finishDelivery, insertPendingTestDelivery } from '../db/deliveries.ts';
 import { insertPreview } from '../db/previews.ts';
 import type { NotificationChannel, Notification } from './notification-channel.ts';
-import { SEND_TIMEOUT_MS, withTimeout } from './with-timeout.ts';
+import { SEND_TIMEOUT_MS, withTimeout } from '../util/with-timeout.ts';
 
 function testNotification(connection: ChannelConnection): Notification {
   return {
