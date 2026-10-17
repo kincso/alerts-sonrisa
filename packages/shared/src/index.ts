@@ -12,3 +12,4 @@ export interface HealthResponse {
 export * from './identity';
 export * from './channels';
 export * from './errors';
+export * from './sources';

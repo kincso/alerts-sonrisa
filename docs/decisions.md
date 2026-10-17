@@ -46,3 +46,14 @@ D1–D5 are recorded in assumptions.md ("Answers to open questions"). Their tech
 
 | S1-6 | **The admin channel switch blocks new use, not existing data.** For a disabled channel type: POST of a new connection → 400; **Send test** → `{ status: 'failed', error: 'Channel disabled by admin.' }`, nothing sent and no delivery row; **PUT still works** (the type only has to be registered), so existing connections stay editable. | Send test respects the switch, PUT allowed · Send test bypasses the switch (document only) | Developer's choice after the S1 review (m3). Matches DoD 6 ("Disabling … a channel takes effect") for every path that sends; renaming a connection sends nothing. |
 | S1-7 | **Web `typecheck` runs `ngc -p tsconfig.app.json --noEmit`** (then `tsc` for the specs), so templates are type-checked by the gate. | `ngc` · `tsc` + rely on `ng build` | Developer's choice after the S1 review (M3, first raised as S0 review M1). `tsc` alone let a template typo pass all three gates. `ngc` comes with `@angular/compiler-cli`, already installed. |
+
+## S2 decisions (2026-10-17)
+
+| # | Decision | Options considered | Reasoning |
+|---|---|---|---|
+| S2-1 | **`fast-xml-parser` parses the BBC RSS feed.** | `fast-xml-parser` · Hand-written regex parser | Developer's choice. Handles CDATA and entities; a regex parser would be fragile on both. v5.11.2 brings 7 small transitive packages (`strnum`, `@nodable/entities`, …), not zero as first stated. |
+| S2-2 | **Fixtures are trimmed live snapshots** (about 5 items per feed, fetched 2026-10-17) **plus hand-made edge items** (USGS null `mag`, BBC item without a guid). The untrimmed BBC fetch is kept in `process/f6/` as the first F6 snapshot. | Trimmed live data + edge items · Fully hand-written | Developer's choice. Real field shapes, and the same fetch starts the F6 check (DS9). |
+| S2-3 | **`POLL_INTERVAL_MS` defaults to 180000 (3 min, A5) everywhere**; `.env.example` shows 15000 for dev. | One default + `.env.example` · `dev` script sets 15000 | Developer's choice. `npm start` (the reviewer path) then behaves as A5 says. |
+| S2-4 | **`PollResult = { sourceId, status: 'ok' \| 'skipped' \| 'failed', fetched, inserted, error? }`.** "Poll now" on a disabled source returns 200 with `status: 'skipped'`, not 409; an unknown source id returns 404. | 200 `skipped` · 409 | Developer's choice. Matches the S4 check "disable BBC → poll now skips it". |
+| S2-5 | **`withTimeout` moves to `apps/api/src/util/with-timeout.ts`**, used by both channels and sources. `SEND_TIMEOUT_MS` moves with it. | Move to `util/` · Import from `channels/` | Developer's choice. Sources should not depend on the channels folder. |
+| S2-6 | **F6 second snapshot is taken by the developer later**; the reminder sits at the start of plan-v2 S3. | Developer runs it · Claude runs it at the end of the session | Developer's choice: the two snapshots need hours between them. |

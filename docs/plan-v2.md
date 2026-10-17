@@ -166,6 +166,8 @@ Commit: `feat(api): USGS and BBC source adapters with interval poller`
 ### S3 – Alerts + matcher + delivery pipeline (end-to-end) · 2.35h
 **Goal:** event → matching alert → email/Slack → delivery log, using endpoints that already exist (S1) or are built here.
 
+> **Reminder before starting S3 (F6, decisions.md S2-6):** take the second BBC snapshot (`curl -o process/f6/bbc-world-<UTC time>.xml https://feeds.bbci.co.uk/news/world/rss.xml`), compare its guids with snapshot 1 in `process/f6/`, and record the result in testing.md S2-12.
+
 Tasks
 - **BE (1.0):**
   - `/me/alerts` CRUD (A14); `GET /sources`.

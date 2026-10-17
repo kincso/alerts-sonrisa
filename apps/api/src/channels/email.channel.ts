@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import type { ChannelConfig, FieldErrors } from '@alerts/shared';
 import type { EmailPreview } from '../db/previews.ts';
 import type { Notification, NotificationChannel, SendOutcome } from './notification-channel.ts';
-import { SEND_TIMEOUT_MS } from './with-timeout.ts';
+import { SEND_TIMEOUT_MS } from '../util/with-timeout.ts';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
