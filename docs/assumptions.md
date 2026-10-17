@@ -1,3 +1,82 @@
 # Assumptions
 
 _Assumptions made during the project, and whether they were later confirmed or rejected._
+
+## Brief review (2026-10-17)
+
+Original brief:
+
+> "We want users to be able to set up alerts so they get notified when something
+> important happens in the world — like breaking news, market movements, natural
+> disasters, that kind of thing. Should work for both email and Slack. Make it
+> flexible enough that we can add more channels later. We need an admin view too."
+
+Fixed constraints: simplest possible backend · free, public data sources only (no paid APIs) · runs locally with minimal reviewer setup · TypeScript throughout · Angular frontend · ~10–12 developer hours left.
+
+Each row is an open question for the PM. Until the PM answers, the default assumption is what gets built. ⏱ marks items where the "full" answer would not fit the time frame, so the default is a deliberately reduced version.
+
+Status values: **Open** (not answered yet) · **Confirmed** · **Rejected** (record what changed).
+
+Group values (triage, 2026-10-17 — no PM available, the developer acts as product owner):
+- **A – Blocking**: sets the core data model or architecture. Getting it wrong, or leaving it open, means rework. Decide before writing code.
+- **B – Shaping**: changes how a feature behaves, but sits behind an interface or in one module, so it's cheap to change later. Decide when building that feature.
+- **C – Cosmetic / deferrable**: the default is good enough, or the item can be dropped from scope.
+
+### Triage rationale
+
+**A – Blocking (6)**
+- **A1** – the alert rule shape (source + keywords + threshold) is the core entity. Matching logic, the API and the alert form all depend on it.
+- **A2** – the set of categories decides the shape of the normalized `Event` model that every source must map to.
+- **A8** – the identity/role model (user vs admin, how a request knows who it is) touches every endpoint and route guard.
+- **A12** – the channel abstraction is the explicit "add channels later" requirement. Retrofitting it means rewriting delivery.
+- **A13** – where channel targets live (user vs alert) decides the data model and two forms.
+- **A20** – the backend framework and repo layout (shared types, one start command) can't be swapped cheaply once code exists. This is a technical decision rather than a product one; log it in `decisions.md`.
+
+**B – Shaping**: A3, A4, A5, A7, A9, A10, A11, A14, A16, A17, A18, A19, A23. Each is limited to one source adapter, channel adapter, matcher, screen or repository. A23 is borderline: the visual style is cosmetic, but swapping the component library late would touch every screen.
+
+**C – Cosmetic / deferrable**: A6, A15, A21, A22, A24, A25. The defaults work as they are, or the item is already listed as out of scope.
+
+| # | Group | Ambiguity | Question for PM | Default assumption | Reasoning | Status | AI recommendation | My decision |
+|---|-------|-----------|-----------------|--------------------|-----------|--------|-------------------|-------------|
+| A1 | A | What counts as "something important" | How should importance be decided: by the user, by us, or automatically? | The user decides through rule conditions: source + optional keywords + optional threshold (e.g. magnitude ≥ 6, price change ≥ 5%). No automatic scoring. | Rules are clear, testable and easy to explain. Automatic importance scoring needs ML/NLP. ⏱ | Rejected (replaced by decision) | Option 1 – typed rule per category (`news` → keywords, `earthquake` → min magnitude + region, `market` → coin + min % change); ~2h. Argument against: hard-codes categories, so each new source needs type + matcher + form changes. After deep dive: option 3 rated close (about half the effort, can be extended without rework). | **Option 3 – keywords + source severity.** A rule = source + keywords (empty = all) + minimum severity (`low`/`medium`/`high`). Each source adapter maps its own signal to severity (GDACS level, USGS magnitude bands, crypto % bands). One generic matcher, one form. Chosen because it costs least (~1–1.5h) and can be extended later with optional threshold fields (~1h, additive). Still open: severity for news (RSS has none), and severity band edges, to be documented in `decisions.md`. |
+| A2 | A | Which event categories and sources | Is "news, markets, disasters" the full list or just examples? Any preferred sources? | 3 categories, at least one free no-key source each: **disasters** – USGS earthquake GeoJSON feed and/or GDACS RSS; **news** – public RSS feeds (e.g. BBC World); **markets** – CoinGecko public API (crypto). Sources sit behind a common source interface, so more can be added later. | All of these are free, need no API key and work out of the box for a reviewer. | Rejected (replaced by decision) | Option 1 – three categories, one source each: USGS earthquakes, BBC World RSS, CoinGecko crypto (~2.5–3h). Covers every example in the brief; USGS gives a steady stream of live events for the demo. Argument against: CoinGecko is the riskiest adapter (price stream → events, keyless rate limits, possible key requirement), and USGS covers earthquakes only, not all natural disasters. | **Option 1 without CoinGecko: USGS earthquakes + BBC World RSS news.** Market movements left out of the MVP to keep scope small. Accepted trade-offs: one example from the brief (markets) is not covered; the source interface is only shaped by "one feed item = one event" sources, so adding a stream-type source (markets) later may need interface changes. Still open: severity for news (from A1). |
+| A3 | B | "Market movements" with free data only | Which instruments matter (stocks, indices, FX, crypto)? Is delayed data OK? | Crypto watchlist (e.g. BTC, ETH) via CoinGecko, 24h % change threshold. Stocks are not included. | Free, keyless, reliable stock data barely exists; unofficial Yahoo endpoints break and have ToS risk. ⏱ | Open |
+| A4 | B | "Breaking" news | Does "breaking" mean truly breaking (first report, de-duplicated across outlets) or just new? | "Breaking" = a new RSS item that matches the user's keywords since the last poll. | Real breaking-news detection needs clustering across outlets. ⏱ | Open |
+| A5 | B | How events are detected | How fast must notifications arrive (seconds / minutes)? | Backend polls each source on a fixed interval (about 2–5 min, respecting rate limits). No push, no queue. | Simplest backend. Minutes of latency is fine for this kind of alert. | Open |
+| A6 | C | When notifications are sent | Immediate only, or digests / quiet hours too? | Immediate, one notification per matching event per alert. | Digests and scheduling double the delivery logic. ⏱ | Open |
+| A7 | B | Duplicates and noise | What if one event matches many times, or a source floods us? | Dedupe by (alert, source event ID). Simple per-alert cap/cooldown. | Without it the first poll sends a flood of old items. Cheap to add. | Open |
+| A8 | A | Users and authentication | Is real login needed? Where do users come from? | No real auth. Seeded users plus a simple "acting as" user switcher; role is `user` or `admin`. | Auth costs a lot of hours and isn't what's being evaluated. Clearly marked as a mock. ⏱ | Confirmed | Option 1 – user switcher (no auth), ~45 min–1h, with all identity logic in two pieces: Angular `CurrentUserService` + one backend middleware that sets `req.user`. Argument against: for a frontend role it shows almost no auth skills (guards, interceptor, login flow, 401 handling), and the admin view is "protected" only by a dropdown; option 4 (demo login buttons, ~1.5h) would show them. | **Option 1 – user switcher (no auth).** Seeded users with a `role`; "acting as" dropdown; interceptor sends the user ID; backend middleware resolves `req.user`. Clearly labelled as a mock. Kept swappable for real auth later by: identity only in `CurrentUserService` + one middleware; `/me/...` endpoints, never a `userId` from the client; admin check only in one `requireAdmin` middleware + one route guard. Accepted trade-off: login flow UX (login/logout, expiry, 401) is postponed, not saved. |
+| A9 | B | What the admin view does | Who is admin and what can they see/do? | Admin can: see all users' alerts, see a delivery log (sent/failed per channel), see source health (last poll, errors), enable/disable sources and channels. Admin does not edit users' alerts. | Covers monitoring and control with mostly read-only screens. | Open |
+| A10 | B | Real email sending | Must emails reach real inboxes during the demo? | Email channel uses Nodemailer with an SMTP config from env vars. With no config it falls back to a dev/test transport (Ethereal test account, or log-only) and shows a preview link. | A reviewer can see emails without an SMTP account. Real deliverability (domain, SPF/DKIM) is out of scope. | Open |
+| A11 | B | Real Slack sending | Slack app with OAuth, or incoming webhooks? DMs or channels? | Slack Incoming Webhook URL entered by the user. Without a URL the channel runs in dry-run mode (logged and visible in the UI). | Webhooks are free and need no app review. OAuth/bot install is too much for the time frame. ⏱ | Open |
+| A12 | A | "Flexible enough to add channels" | Which channels come next (SMS, push, Teams, webhook)? Does adding one need to be code-free? | A `NotificationChannel` interface plus a channel registry in the backend. The frontend builds the channel settings form from channel metadata. Adding a channel = one new adapter class + registering it. No runtime plugins. | Shows the extension point without over-engineering. A generic "custom webhook" channel could be a cheap 3rd example if time allows. | Confirmed | Option 1 – interface + registry + generated form, ~1.5–2h: `NotificationChannel { type, label, fields, validate, send }` in a backend registry; `GET /channels` exposes a tiny field list (`key, label, type, required`, no JSON Schema library); Angular builds the settings form from it. Argument against: with only two channels a form generator is speculative (YAGNI) and gives a plainer UX; option 2 (hand-written forms) keeps the same backend extension point for less. | **Option 1 – interface + registry + generated form.** Adding a channel = one backend adapter file; the UI picks it up from `GET /channels`. Field format kept minimal (plain field list, no JSON Schema library). |
+| A13 | A | Where channel targets are stored | Is the email/Slack target per user or per alert? | Per-user channel settings (email address, Slack webhook). Each alert picks which of the user's channels to use. | No re-entering targets on every alert. Fits the multi-channel model. | Confirmed | Option 1 – per-user channel connections, ~1–1.5h: `ChannelConnection { id, type, label, config }` per user (config = A12 generated form); alerts reference connection IDs. Fits A12, gives one place for "send test" (A18) and a clear target for the delivery log (A16/A17). Argument against: most MVP users have one email + one webhook, so option 3 (one target per type on the profile) needs less UI and has no deleted-connection edge case. | **Option 1 – per-user channel connections.** Users manage their connections on one screen; each alert picks one or more of them. Still open (Group B): what happens to alerts when a connection they use is deleted. |
+| A14 | B | What an alert contains | What can a user configure on an alert? | Name, source/category, conditions (keywords and/or threshold), one or more channels, active/paused toggle. Full CRUD. | The smallest set that makes alerts useful. | Open |
+| A15 | C | Notification content | Is there a required format or branding? | Plain template: event title, short summary, source name, link, timestamp, and which alert matched. One simple template per channel (HTML email, Slack blocks/text). | Consistent and easy to extend. | Open |
+| A16 | B | Delivery failures | What should happen when a send fails? | Record failure with the error in the delivery log, shown to user and admin. At most one retry, no backoff queue. | Visible failures matter more than guaranteed delivery here. ⏱ | Open |
+| A17 | B | User-facing history | Can users see notifications they received? | Yes: a per-user notification history list in the app. | Also lets the reviewer check the system without a real inbox or Slack. | Open |
+| A18 | B | How to demo without waiting for real events | How will the PM/reviewer see it working? | "Send test notification" per channel, plus an admin/dev "simulate event" action (or fixture source) that runs the full matching → delivery pipeline. | Real earthquakes or a 5% crypto move may not happen during review. | Open |
+| A19 | B | Persistence | Any database requirement? | Single local file store (JSON file, or SQLite if it needs no native build step) behind a repository layer. No external DB server. | "Simplest backend" + "minimal setup". Native SQLite modules can fail to build on Windows. | Open |
+| A20 | A | Backend/runtime stack | Any preferred backend framework or hosting? | Node.js + TypeScript (Express or Fastify) in the same repo as the Angular app. Shared types package. One install, one start command. | TypeScript throughout. Shared models avoid frontend/backend drift. | Confirmed | Option 1 – npm workspaces monorepo with Express, ~1h: `apps/web` (Angular CLI), `apps/api` (Express + TS via `tsx`, no build step), `packages/shared` (types); root `npm install` + `npm start` (concurrently), Angular dev-server proxy to `/api`. Argument against: workspaces + Angular CLI is the setup most likely to cost an unplanned hour (shared-package resolution, hoisting, Windows); option 3 (plain folders + tsconfig path) avoids workspace tooling. Also advised: pin the Node version (`.nvmrc` / `engines`). | **Option 1 – npm workspaces monorepo with Express.** `apps/web`, `apps/api`, `packages/shared`; one install, one start command. |
+| A21 | C | Geographic / language scope | Global or specific regions? Location-based filtering? Languages? | Global events, English UI and sources. Optional simple region filter only where the source supports it (e.g. earthquake place text / bounding box). No map UI. | Map-based geofencing would cost a lot of time. ⏱ | Open |
+| A22 | C | Scale and non-functionals | Expected number of users and alerts? Uptime requirements? | Single local instance, tens of users, hundreds of alerts. No horizontal scaling. | Local-only homework. Documented as a known limit. | Open |
+| A23 | B | UI design / accessibility | Is there a design system or brand? Mobile support? Accessibility level? | Angular Material, responsive (desktop-first, usable on mobile), basic WCAG AA (labels, contrast, keyboard navigation). Evergreen browsers only. | Fast, consistent, accessible by default. | Open |
+| A24 | C | Privacy / compliance | Is GDPR, unsubscribe or data retention needed? | Pause/delete alerts and channels only. No legal/compliance features. Data stays local. | Out of the time frame. Noted for production. ⏱ | Open |
+| A25 | C | Source terms and rate limits | Are we allowed to poll these sources commercially? | Respect documented rate limits and cache responses. Attribute sources in notifications. Use only feeds that are clearly public. | Avoids getting blocked during the review and stays a good API citizen. | Open |
+
+## Out of scope (for this time frame)
+
+- Real authentication: sign-up, passwords, SSO, password reset, sessions (mocked user switcher instead).
+- Production email deliverability: own domain, SPF/DKIM, bounce handling, unsubscribe links.
+- Slack OAuth app / bot install, DMs, interactive Slack messages.
+- Building more channels than email + Slack (SMS, push, Teams). Only the extension point is delivered, plus maybe a generic webhook if time allows.
+- Digests, scheduled delivery, quiet hours, time-zone-aware scheduling.
+- ML/NLP: importance scoring, real "breaking" detection, de-duplicating the same story across sources.
+- Stock/FX market data (no reliable free keyless source); real-time tick data.
+- Message queues, retries with backoff, horizontal scaling, high availability.
+- Map-based geofencing / location UI.
+- Multi-tenancy, teams/organizations, shared alerts, granular admin permissions.
+- Internationalization (non-English UI or sources).
+- GDPR/compliance features, audit trails, data retention policies.
+- Cloud deployment, CI/CD pipelines, monitoring/observability stack.
+- Full end-to-end test suite (focus on unit tests for matching/channel logic plus a few component tests).
