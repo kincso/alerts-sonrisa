@@ -1,0 +1,29 @@
+{
+  "name": "alerts-sonrisa",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": "^22.22.3 || >=24.15.0"
+  },
+  "scripts": {
+    "start": "concurrently -k -n api,web -c blue,magenta \"npm run dev -w @alerts/api\" \"npm start -w @alerts/web\"",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "angular-eslint": "^22.6.0",
+    "concurrently": "^10.0.6",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.71.2"
+  }
+}

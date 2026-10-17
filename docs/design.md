@@ -111,7 +111,7 @@ All paths are under `/api`. **Public** = mounted before the auth middleware. **U
 
 | Method | Path | Request → Response | Access | Slice |
 |---|---|---|---|---|
-| GET | `/health` | → `{ status: 'ok' }` | public | S0 |
+| GET | `/health` | → `HealthResponse { status: 'ok', severities }` (S0-6) | public | S0 |
 | GET | `/users` | → `UserSummary[]` (`id, name, role`) | public, mock only (DS6) | S1 |
 | GET | `/previews/:id` | → HTML email preview (UUID id) | public (DS7) | S1 |
 | GET | `/me` | → `User` | user | S1 |

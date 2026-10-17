@@ -1,0 +1,29 @@
+<main class="page">
+  <h1>World Alerts</h1>
+
+  <section aria-labelledby="web-severities">
+    <h2 id="web-severities">Severities (shared package, in the browser)</h2>
+    <p data-testid="web-severities">{{ severities.join(', ') }}</p>
+  </section>
+
+  <section aria-labelledby="api-health">
+    <h2 id="api-health">API health</h2>
+    @let h = health();
+    @switch (h.kind) {
+      @case ('loading') {
+        <p>Checking the API…</p>
+      }
+      @case ('error') {
+        <p role="alert">The API is not reachable. Is it running on port 3000?</p>
+      }
+      @case ('ok') {
+        <p data-testid="api-status">Status: {{ h.body.status }}</p>
+        <p data-testid="api-severities">
+          Severities from the API: {{ h.body.severities.join(', ') }}
+        </p>
+      }
+    }
+  </section>
+</main>
+
+<router-outlet />
