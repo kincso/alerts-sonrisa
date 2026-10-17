@@ -12,12 +12,17 @@ export function validateSlackConfig(config: ChannelConfig): FieldErrors {
   return {};
 }
 
-/** Slack mrkdwn text (A15). */
+/** `&`, `<` and `>` are control characters in Slack mrkdwn (mentions and links). */
+function escapeSlack(value: string): string {
+  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
+/** Slack mrkdwn text (A15). User and feed text is escaped; only our own link is markup. */
 export function renderSlackText(n: Notification): string {
-  const lines = [`*${n.title}*`, n.summary];
+  const lines = [`*${escapeSlack(n.title)}*`, escapeSlack(n.summary)];
   if (n.url) lines.push(`<${n.url}|Read more>`);
-  if (n.alertName) lines.push(`Matched alert: ${n.alertName}`);
-  lines.push(`_Source: ${n.sourceLabel} · ${n.occurredAt}_`);
+  if (n.alertName) lines.push(`Matched alert: ${escapeSlack(n.alertName)}`);
+  lines.push(`_Source: ${escapeSlack(n.sourceLabel)} · ${n.occurredAt}_`);
   return lines.join('\n');
 }
 

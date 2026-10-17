@@ -63,7 +63,8 @@ export function connectionRoutes(db: Db, channels: ChannelRegistry): Router {
   router.put('/me/connections/:id', (req, res) => {
     const existing = findOwn(currentUser(req), req.params.id);
     if (!existing) return sendNotFound(res);
-    const parsed = parseConnectionInput(req.body, findEnabledChannel);
+    // Any registered type: a connection stays editable while an admin has its channel off.
+    const parsed = parseConnectionInput(req.body, (type) => channels.get(type));
     if (!parsed.ok) return sendFieldErrors(res, parsed.fieldErrors);
     if (parsed.input.type !== existing.type) {
       return sendFieldErrors(res, { type: 'The channel of a connection cannot change.' });
@@ -82,10 +83,10 @@ export function connectionRoutes(db: Db, channels: ChannelRegistry): Router {
     const user = currentUser(req);
     const connection = findOwn(user, req.params.id);
     if (!connection) return sendNotFound(res);
-    const channel = channels.get(connection.type);
+    const channel = findEnabledChannel(connection.type);
     const result: SendResult = channel
       ? await sendTest(db, user.id, connection, channel)
-      : { status: 'failed', error: `Channel "${connection.type}" is not available.` };
+      : { status: 'failed', error: 'Channel disabled by admin.' };
     res.json(result);
   });
 

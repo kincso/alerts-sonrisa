@@ -140,4 +140,30 @@ describe('channels and connections API', () => {
 
     expect(await res.json()).toEqual({ status: 'dry-run' });
   });
+
+  it('respects the admin channel switch for Send test but keeps the connection editable (S1-15)', async () => {
+    const { id } = await create('alice', EMAIL);
+    api.db.prepare("UPDATE channel_types SET enabled = 0 WHERE type = 'email'").run();
+
+    const test = await api.call(`/api/me/connections/${id}/test`, {
+      user: 'alice',
+      method: 'POST',
+    });
+    expect(await test.json()).toEqual({ status: 'failed', error: 'Channel disabled by admin.' });
+    expect(api.db.prepare('SELECT * FROM deliveries').all()).toHaveLength(0);
+
+    const edit = await api.call(`/api/me/connections/${id}`, {
+      user: 'alice',
+      method: 'PUT',
+      body: { ...EMAIL, label: 'Renamed' },
+    });
+    expect(edit.status).toBe(200);
+
+    const add = await api.call('/api/me/connections', {
+      user: 'alice',
+      method: 'POST',
+      body: EMAIL,
+    });
+    expect(add.status).toBe(400);
+  });
 });

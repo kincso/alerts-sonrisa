@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { slackChannel, validateSlackConfig } from './slack.channel.ts';
+import { renderSlackText, slackChannel, validateSlackConfig } from './slack.channel.ts';
 
 // testing.md S1-10, decisions.md S1-3
 describe('validateSlackConfig', () => {
@@ -33,5 +33,24 @@ describe('slackChannel.send', () => {
     );
 
     expect(outcome).toEqual({ status: 'dry-run' });
+  });
+});
+
+// testing.md S1-14
+describe('renderSlackText', () => {
+  it('escapes user and feed text so it cannot become a mention or link', () => {
+    const text = renderSlackText({
+      title: 'A & B <!channel>',
+      summary: 'See <https://evil.example|here>',
+      alertName: '<@U123>',
+      sourceLabel: 'Test',
+      occurredAt: '2026-10-17T00:00:00.000Z',
+      url: 'https://www.bbc.co.uk/news/1',
+    });
+
+    expect(text).toContain('*A &amp; B &lt;!channel&gt;*');
+    expect(text).toContain('See &lt;https://evil.example|here&gt;');
+    expect(text).toContain('Matched alert: &lt;@U123&gt;');
+    expect(text).toContain('<https://www.bbc.co.uk/news/1|Read more>');
   });
 });
