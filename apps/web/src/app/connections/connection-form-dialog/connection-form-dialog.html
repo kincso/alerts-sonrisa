@@ -1,0 +1,46 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <h2 mat-dialog-title>{{ existing ? 'Edit connection' : 'Add connection' }}</h2>
+
+  <mat-dialog-content class="content">
+    <mat-form-field>
+      <mat-label>Channel</mat-label>
+      <mat-select formControlName="type" required>
+        @for (channel of data.channels; track channel.type) {
+          <mat-option [value]="channel.type">{{ channel.label }}</mat-option>
+        }
+      </mat-select>
+      @if (existing) {
+        <mat-hint>The channel of a saved connection can't change.</mat-hint>
+      }
+      @if (form.controls.type.hasError('server')) {
+        <mat-error>{{ form.controls.type.getError('server') }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="label" required autocomplete="off" />
+      <mat-hint>For example "Work inbox" or "#alerts channel".</mat-hint>
+      @if (form.controls.label.hasError('required')) {
+        <mat-error>Name is required.</mat-error>
+      } @else if (form.controls.label.hasError('server')) {
+        <mat-error>{{ form.controls.label.getError('server') }}</mat-error>
+      }
+    </mat-form-field>
+
+    @if (descriptor(); as channel) {
+      <app-generated-channel-form [fields]="channel.fields" [form]="configForm()" />
+    }
+
+    @if (formError(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : 'Save' }}
+    </button>
+  </mat-dialog-actions>
+</form>

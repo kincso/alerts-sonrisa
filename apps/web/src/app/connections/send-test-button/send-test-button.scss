@@ -1,0 +1,21 @@
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spinner {
+  display: inline-block;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
+
+.result {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.failed {
+  color: var(--mat-sys-error);
+}

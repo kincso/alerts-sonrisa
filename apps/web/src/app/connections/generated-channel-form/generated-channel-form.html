@@ -1,0 +1,23 @@
+<div class="fields" [formGroup]="form()">
+  @for (field of fields(); track field.key) {
+    @let control = form().controls[field.key];
+    <mat-form-field>
+      <mat-label>{{ field.label }}</mat-label>
+      <input
+        matInput
+        [type]="field.type"
+        [formControlName]="field.key"
+        [required]="field.required"
+        [attr.autocomplete]="field.type === 'email' ? 'email' : 'off'"
+      />
+      @if (!field.required) {
+        <mat-hint>Optional</mat-hint>
+      }
+      @if (control?.hasError('required')) {
+        <mat-error>{{ field.label }} is required.</mat-error>
+      } @else if (control?.hasError('server')) {
+        <mat-error>{{ control?.getError('server') }}</mat-error>
+      }
+    </mat-form-field>
+  }
+</div>

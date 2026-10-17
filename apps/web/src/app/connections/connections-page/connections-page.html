@@ -1,0 +1,56 @@
+@let page = view();
+<section class="page" aria-labelledby="connections-title">
+  <header class="header">
+    <div>
+      <h2 id="connections-title">Connections</h2>
+      <p class="intro">Where your alerts are sent. Add one per inbox or Slack channel.</p>
+    </div>
+    @if (page.status === 'ready' && page.connections.length > 0) {
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="page.channels.length === 0"
+        (click)="openDialog()"
+      >
+        Add connection
+      </button>
+    }
+  </header>
+
+  @if (page.status === 'idle') {
+    <p>Pick a user in "Acting as" to see their connections.</p>
+  } @else if (page.status === 'loading') {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading connections" />
+  } @else if (page.status === 'error') {
+    <div class="state" role="alert">
+      <p>Could not load your connections.</p>
+      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+    </div>
+  } @else if (page.status === 'ready') {
+    @if (page.refreshing) {
+      <mat-progress-bar mode="indeterminate" aria-label="Refreshing connections" />
+    }
+    @if (page.connections.length === 0) {
+      <div class="state">
+        <p>You have no connections yet. Add one to start receiving alerts.</p>
+        <button
+          mat-flat-button
+          type="button"
+          [disabled]="page.channels.length === 0"
+          (click)="openDialog()"
+        >
+          Add connection
+        </button>
+      </div>
+    } @else {
+      <app-connection-list
+        [connections]="page.connections"
+        [channels]="page.channels"
+        [testStates]="testStates()"
+        (edit)="openDialog($event)"
+        (remove)="remove($event)"
+        (test)="sendTest($event)"
+      />
+    }
+  }
+</section>

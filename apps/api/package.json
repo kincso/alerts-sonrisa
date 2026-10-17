@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@alerts/shared": "*",
-    "express": "^5.3.0"
+    "express": "^5.3.0",
+    "nodemailer": "^10.1.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
