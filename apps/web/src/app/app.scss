@@ -1,5 +1,32 @@
-.page {
-  max-width: 48rem;
+.toolbar {
+  height: auto;
+  min-height: 64px;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
+}
+
+.title {
+  margin: 0;
+  font: var(--mat-sys-title-large);
+}
+
+.nav .active {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.users-error {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+}
+
+.main {
+  max-width: 60rem;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1.5rem 1rem;
 }

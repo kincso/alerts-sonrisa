@@ -1,0 +1,28 @@
+@let s = state();
+<button
+  mat-stroked-button
+  type="button"
+  [disabled]="s?.kind === 'pending'"
+  [attr.aria-label]="'Send test to ' + connectionLabel()"
+  (click)="send.emit()"
+>
+  @if (s?.kind === 'pending') {
+    <mat-spinner diameter="16" class="spinner" aria-hidden="true" />
+    Sending…
+  } @else {
+    Send test
+  }
+</button>
+
+<p class="result" aria-live="polite">
+  @if (s?.kind === 'done') {
+    <span [class.failed]="s.result.status === 'failed'">
+      {{ statusText[s.result.status] + (s.result.error ? ': ' + s.result.error : '') }}
+    </span>
+    @if (s.result.previewUrl) {
+      · <a [href]="s.result.previewUrl" target="_blank" rel="noopener">Open email preview</a>
+    }
+  } @else if (s?.kind === 'error') {
+    <span class="failed">{{ s.message }}</span>
+  }
+</p>

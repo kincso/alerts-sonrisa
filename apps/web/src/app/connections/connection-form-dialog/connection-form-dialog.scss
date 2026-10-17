@@ -1,0 +1,11 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.form-error {
+  color: var(--mat-sys-error);
+  margin: 0;
+}

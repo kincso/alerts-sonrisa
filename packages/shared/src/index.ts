@@ -8,3 +8,7 @@ export interface HealthResponse {
   status: 'ok';
   severities: readonly Severity[];
 }
+
+export * from './identity';
+export * from './channels';
+export * from './errors';

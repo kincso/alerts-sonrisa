@@ -1,0 +1,37 @@
+<ul class="list">
+  @for (row of rows(); track row.connection.id) {
+    <li class="item">
+      <div class="info">
+        <h3 class="name">{{ row.connection.label }}</h3>
+        <p class="meta">
+          <span class="channel">{{ row.channelLabel }}</span>
+          <span class="target">{{ row.target }}</span>
+        </p>
+      </div>
+      <app-send-test-button
+        [state]="testStates()[row.connection.id]"
+        [connectionLabel]="row.connection.label"
+        (send)="test.emit(row.connection)"
+      />
+      <div class="actions">
+        <button
+          mat-button
+          type="button"
+          [attr.aria-label]="'Edit ' + row.connection.label"
+          (click)="edit.emit(row.connection)"
+        >
+          Edit
+        </button>
+        <button
+          mat-button
+          type="button"
+          class="delete"
+          [attr.aria-label]="'Delete ' + row.connection.label"
+          (click)="remove.emit(row.connection)"
+        >
+          Delete
+        </button>
+      </div>
+    </li>
+  }
+</ul>

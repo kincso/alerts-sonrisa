@@ -1,0 +1,13 @@
+<mat-form-field subscriptSizing="dynamic" class="switcher">
+  <mat-label>Acting as (mock)</mat-label>
+  <mat-select [value]="selectedId()" (selectionChange)="selected.emit($event.value)">
+    @for (user of users(); track user.id) {
+      <mat-option [value]="user.id">
+        {{ user.name }}
+        @if (user.role === 'admin') {
+          (admin)
+        }
+      </mat-option>
+    }
+  </mat-select>
+</mat-form-field>
