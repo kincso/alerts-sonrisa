@@ -13,9 +13,10 @@
   "scripts": {
     "start": "concurrently -k -n api,web -c blue,magenta \"npm run dev -w @alerts/api\" \"npm start -w @alerts/web\"",
     "test": "npm run test --workspaces --if-present",
-    "lint": "eslint .",
+    "lint": "eslint . && npm run format:check",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
