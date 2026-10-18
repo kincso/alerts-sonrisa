@@ -99,5 +99,16 @@ export function adminRoutes({ db, sources, poller, dispatcher }: AdminDeps): Rou
     res.json(body);
   });
 
+  // S4 (A9): stubs for the test-first commit; the implementation commit fills them in.
+  const notImplemented = () => {
+    throw new Error('not implemented');
+  };
+  router.get('/admin/alerts', notImplemented);
+  router.get('/admin/deliveries', notImplemented);
+  router.get('/admin/sources', notImplemented);
+  router.patch('/admin/sources/:id', notImplemented);
+  router.get('/admin/channels', notImplemented);
+  router.patch('/admin/channels/:type', notImplemented);
+
   return router;
 }
