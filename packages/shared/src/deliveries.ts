@@ -18,7 +18,10 @@ export interface DeliveryView {
   createdAt: string;
 }
 
-/** POST /api/admin/simulate-event (A18). Any severity, also for BBC (decisions.md S3-2). */
+/**
+ * POST /api/admin/simulate-event (A18). A source with `fixedSeverity` accepts only that
+ * severity, e.g. BBC → medium; otherwise 400 `fieldErrors.severity` (decisions.md S3-2).
+ */
 export interface SimulateEventInput {
   sourceId: SourceId;
   title: string;
