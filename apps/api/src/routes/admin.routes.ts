@@ -4,6 +4,7 @@ import {
   type ApiError,
   type Event,
   type FieldErrors,
+  type Severity,
   type SimulateEventResult,
 } from '@alerts/shared';
 import { requireAdmin } from '../auth/require-admin.ts';
@@ -12,7 +13,7 @@ import { findEventBySourceEventId, insertNewEvents } from '../db/events.ts';
 import type { Dispatcher } from '../dispatcher/dispatcher.ts';
 import type { Poller } from '../poller/poller.ts';
 import type { SourceRegistry } from '../sources/registry.ts';
-import type { NewEvent } from '../sources/source.ts';
+import type { NewEvent, Source } from '../sources/source.ts';
 import { isRecord } from '../util/is-record.ts';
 import { sendFieldErrors } from './respond.ts';
 
@@ -30,16 +31,26 @@ function asString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-/** Any severity, also for BBC (decisions.md S3-2); `occurredAt` = now, so D7 passes. */
+/** Checks the severity against the source's `fixedSeverity`, if it has one (S3-2). */
+function severityError(severity: Severity | undefined, source: Source | undefined) {
+  if (!severity) return 'Choose a severity.';
+  const fixed = source?.fixedSeverity;
+  if (!source || !fixed || severity === fixed) return undefined;
+  return `Items from ${source.label} are always ${fixed}.`;
+}
+
+/** `occurredAt` = now, so D7 passes. */
 function parseSimulation(body: unknown, sources: SourceRegistry): ParsedSimulation {
   const raw = isRecord(body) ? body : {};
   const sourceId = asString(raw['sourceId']);
+  const source = sources.get(sourceId);
   const title = asString(raw['title']);
   const severity = SEVERITIES.find((s) => s === raw['severity']);
   const fieldErrors: FieldErrors = {};
-  if (!sources.get(sourceId)) fieldErrors['sourceId'] = 'Choose a source.';
+  if (!source) fieldErrors['sourceId'] = 'Choose a source.';
   if (!title) fieldErrors['title'] = 'Title is required.';
-  if (!severity) fieldErrors['severity'] = 'Choose a severity.';
+  const badSeverity = severityError(severity, source);
+  if (badSeverity) fieldErrors['severity'] = badSeverity;
   if (!severity || Object.keys(fieldErrors).length > 0) return { ok: false, fieldErrors };
   return {
     ok: true,

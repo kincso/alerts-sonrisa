@@ -1,12 +1,26 @@
 import type { Event } from '@alerts/shared';
 import type { NewEvent } from '../sources/source.ts';
-import { newId, now, optionalText, severity, text, type Db, type Row } from './database.ts';
+import {
+  newId,
+  now,
+  optionalText,
+  severity,
+  text,
+  transaction,
+  type Db,
+  type Row,
+} from './database.ts';
 
 /**
  * Stores events, skipping any already stored for (source_id, source_event_id) (A7).
- * Returns only the rows that were actually inserted.
+ * Returns only the rows that were actually inserted. All or nothing, so a failed
+ * poll leaves no stored-but-never-dispatched events behind (S3 review M1).
  */
 export function insertNewEvents(db: Db, sourceId: string, events: readonly NewEvent[]): Event[] {
+  return transaction(db, () => insertEach(db, sourceId, events));
+}
+
+function insertEach(db: Db, sourceId: string, events: readonly NewEvent[]): Event[] {
   const insert = db.prepare(
     `INSERT INTO events
        (id, source_id, source_event_id, title, summary, url, severity, occurred_at, received_at)

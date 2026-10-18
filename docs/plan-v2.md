@@ -51,7 +51,7 @@ The plan does **not** shrink tasks to hide this. The next cuts that would close 
 - prompt exports per slice
 - screenshots
 - README
-- one or more commits per slice
+- one or more commits per slice; from S4 on, a code slice starts with a `test: <slice> cases` commit (CLAUDE.md "Testing", S3 review C1)
 
 ---
 
@@ -196,6 +196,8 @@ Validation
 
 Commit: `feat: alerts CRUD, matcher and delivery pipeline end-to-end`
 
+S3 went in as one commit and the test-first commit was missed (S3 review C1); its review fixes follow the rule.
+
 ### S4 – History + admin view + a11y pass · 2.0h
 **Goal:** users see what they received, and the admin can monitor and control the system (A9, A17).
 
@@ -218,7 +220,9 @@ Validation
 - As admin: disable BBC → "poll now" skips it; disable Slack → a new simulated match skips Slack connections; simulate an event → it appears in the admin log and in the user's history.
 - The axe score is recorded in `testing.md`.
 
-Commit: `feat(web): notification history and admin view`
+Commits, in this order (CLAUDE.md "Testing", S3 review C1):
+1. `test: S4 cases`: the S4 testing.md rows (Expected filled in, Actual and Status empty) and the failing tests for the new admin endpoints and toggles. Code the tests need is added as stubs that throw `not implemented`.
+2. `feat(web): notification history and admin view`
 
 ### S5 – Docs wrap-up + fresh-clone check · 0.5h
 Tasks
@@ -229,6 +233,8 @@ Validation
 - A fresh local clone → follow the README word for word → complete the Definition of Done.
 
 Commit: `docs: README, design, decisions and test results`
+
+No test commit: S5 adds no code. A fix found by the fresh-clone check gets its failing test first.
 
 ---
 
@@ -279,7 +285,7 @@ After cloning, a reviewer with the pinned Node version can:
 7. As a user, not be able to open the admin view (guard + 403).
 8. Run `npm test` and see it pass.
 9. Read "how to add a channel" in the README, and see it backed by the fake-channel component test.
-10. Find one or more commits per slice.
+10. Find one or more commits per slice, and from S4 on a `test: <slice> cases` commit before each code slice's commit.
 
 ---
 
