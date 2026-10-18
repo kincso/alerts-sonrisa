@@ -1,0 +1,33 @@
+<section aria-labelledby="admin-title">
+  <h2 id="admin-title">Admin</h2>
+  <p class="intro">Monitor and control the whole system. Users' alerts are read-only here.</p>
+
+  <!-- matTabContent: a tab's content (and its requests) is created on first open. -->
+  <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" [preserveContent]="true">
+    <mat-tab label="Delivery log">
+      <ng-template matTabContent>
+        <div class="tab"><app-admin-deliveries-tab /></div>
+      </ng-template>
+    </mat-tab>
+    <mat-tab label="Sources">
+      <ng-template matTabContent>
+        <div class="tab"><app-admin-sources-tab /></div>
+      </ng-template>
+    </mat-tab>
+    <mat-tab label="Channels">
+      <ng-template matTabContent>
+        <div class="tab"><app-admin-channels-tab /></div>
+      </ng-template>
+    </mat-tab>
+    <mat-tab label="All alerts">
+      <ng-template matTabContent>
+        <div class="tab"><app-admin-alerts-tab /></div>
+      </ng-template>
+    </mat-tab>
+    <mat-tab label="Simulate event">
+      <ng-template matTabContent>
+        <div class="tab"><app-admin-simulate-tab /></div>
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
+</section>

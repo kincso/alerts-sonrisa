@@ -1,0 +1,39 @@
+@if (sources.status() === 'error') {
+  <div class="state-box" role="alert">
+    <p>Could not load the sources.</p>
+    <button mat-stroked-button type="button" (click)="sources.reload()">Try again</button>
+  </div>
+} @else if (!sources.hasValue()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading sources" />
+} @else {
+  <p class="intro">
+    The event goes through the same steps as a polled one: dedupe, matching and sending.
+  </p>
+  <app-simulate-event-form
+    [sources]="sources.value()"
+    [sending]="sending()"
+    [serverErrors]="serverErrors()"
+    (simulate)="simulate($event)"
+  />
+
+  <div class="result" aria-live="polite">
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+    @if (result(); as done) {
+      <h3>Result</h3>
+      <p>
+        Event "{{ done.event.title }}" ({{ done.event.sourceEventId }}):
+        @if (done.deliveries.length === 0) {
+          nothing new was sent. No active alert matched, or every match was already delivered.
+        } @else {
+          {{ done.deliveries.length }} new
+          {{ done.deliveries.length === 1 ? 'delivery' : 'deliveries' }}.
+        }
+      </p>
+      @if (done.deliveries.length > 0) {
+        <app-delivery-table caption="Deliveries from this event" [deliveries]="done.deliveries" />
+      }
+    }
+  </div>
+}

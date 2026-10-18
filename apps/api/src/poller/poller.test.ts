@@ -76,6 +76,24 @@ describe('poller', () => {
     expect(sourceRow(db, 'a')?.['last_poll_at']).toEqual(expect.any(String));
   });
 
+  // testing.md S2-13 (S2 review m2): recording the failure can fail too.
+  it('still returns failed when the DB is gone while recording the error', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    a.source.fetchRaw = () => {
+      db.close();
+      return Promise.reject(new Error('feed down'));
+    };
+
+    await expect(poller.pollSource(a.source)).resolves.toEqual({
+      sourceId: 'a',
+      status: 'failed',
+      fetched: 0,
+      inserted: 0,
+      error: 'feed down',
+    });
+    expect(consoleError).toHaveBeenCalled();
+  });
+
   // testing.md S2-6
   it('does not store an item twice', async () => {
     await poller.pollSource(a.source);

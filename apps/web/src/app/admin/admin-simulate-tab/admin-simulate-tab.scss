@@ -1,0 +1,17 @@
+.intro {
+  margin: 0 0 1rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.result {
+  margin-top: 1rem;
+
+  h3 {
+    margin: 0;
+    font: var(--mat-sys-title-medium);
+  }
+}
+
+.error {
+  color: var(--mat-sys-error);
+}

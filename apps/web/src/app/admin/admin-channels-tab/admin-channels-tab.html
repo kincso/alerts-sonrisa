@@ -1,0 +1,20 @@
+@if (channels.status() === 'error') {
+  <div class="state-box" role="alert">
+    <p>Could not load the channel types.</p>
+    <button mat-stroked-button type="button" (click)="channels.reload()">Try again</button>
+  </div>
+} @else if (!channels.hasValue()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading channel types" />
+} @else if (channels.value().length === 0) {
+  <p class="state-box">No channel types are registered.</p>
+} @else {
+  <p class="intro">
+    A channel that is off sends nothing: matches skip its connections, "Send test" fails and users
+    can't add new connections of that type.
+  </p>
+  <app-channel-types-table
+    [channels]="channels.value()"
+    [switchStates]="switchStates()"
+    (enabledChange)="setEnabled($event)"
+  />
+}

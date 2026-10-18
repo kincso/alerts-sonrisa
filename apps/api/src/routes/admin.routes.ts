@@ -8,6 +8,7 @@ import {
   type SimulateEventResult,
 } from '@alerts/shared';
 import { requireAdmin } from '../auth/require-admin.ts';
+import type { ChannelRegistry } from '../channels/registry.ts';
 import { newId, now, type Db } from '../db/database.ts';
 import { findEventBySourceEventId, insertNewEvents } from '../db/events.ts';
 import type { Dispatcher } from '../dispatcher/dispatcher.ts';
@@ -15,11 +16,13 @@ import type { Poller } from '../poller/poller.ts';
 import type { SourceRegistry } from '../sources/registry.ts';
 import type { NewEvent, Source } from '../sources/source.ts';
 import { isRecord } from '../util/is-record.ts';
+import { addAdminViewRoutes } from './admin-views.ts';
 import { sendFieldErrors } from './respond.ts';
 
 export interface AdminDeps {
   db: Db;
   sources: SourceRegistry;
+  channels: ChannelRegistry;
   poller: Poller;
   dispatcher: Dispatcher;
 }
@@ -74,7 +77,7 @@ function storeOrFind(db: Db, sourceId: string, event: NewEvent): Event {
 }
 
 /** /admin/... (A9). Mount after `authenticate`; every route needs requireAdmin. */
-export function adminRoutes({ db, sources, poller, dispatcher }: AdminDeps): Router {
+export function adminRoutes({ db, sources, channels, poller, dispatcher }: AdminDeps): Router {
   const router = Router();
   router.use('/admin', requireAdmin);
 
@@ -98,6 +101,8 @@ export function adminRoutes({ db, sources, poller, dispatcher }: AdminDeps): Rou
     const body: SimulateEventResult = { event, deliveries: await dispatcher.dispatch([event]) };
     res.json(body);
   });
+
+  addAdminViewRoutes(router, { db, sources, channels });
 
   return router;
 }

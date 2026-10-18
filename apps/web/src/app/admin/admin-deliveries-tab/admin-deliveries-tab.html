@@ -1,0 +1,27 @@
+@if (deliveries.status() === 'error') {
+  <div class="state-box" role="alert">
+    <p>Could not load the delivery log.</p>
+    <button mat-stroked-button type="button" (click)="deliveries.reload()">Try again</button>
+  </div>
+} @else if (!deliveries.hasValue()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading the delivery log" />
+} @else {
+  <div class="toolbar">
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="deliveries.isLoading()"
+      (click)="deliveries.reload()"
+    >
+      Refresh
+    </button>
+  </div>
+  @if (deliveries.isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Refreshing the delivery log" />
+  }
+  @if (deliveries.value().length === 0) {
+    <p class="state-box">Nothing has been sent yet.</p>
+  } @else {
+    <app-delivery-table caption="Delivery log" [deliveries]="deliveries.value()" />
+  }
+}

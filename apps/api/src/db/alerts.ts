@@ -1,4 +1,4 @@
-import type { Alert, AlertInput } from '@alerts/shared';
+import type { AdminAlertView, Alert, AlertInput } from '@alerts/shared';
 import { newId, now, severity, text, transaction, type Db, type Row } from './database.ts';
 
 /** An alert plus its owner: what the dispatcher needs to write delivery rows. */
@@ -143,4 +143,30 @@ export function alertsUsingConnection(
     )
     .all(connectionId)
     .map((row) => ({ id: text(row, 'id'), name: text(row, 'name') }));
+}
+
+function connectionLabelsOf(db: Db, alertId: string): string[] {
+  return db
+    .prepare(
+      `SELECT c.label FROM alert_connections ac
+       JOIN channel_connections c ON c.id = ac.connection_id
+       WHERE ac.alert_id = ? ORDER BY ac.rowid`,
+    )
+    .all(alertId)
+    .map((row) => text(row, 'label'));
+}
+
+/** Every user's alerts for the admin (A9, decisions.md S4-2), by owner, oldest first. */
+export function listAllAlerts(db: Db): AdminAlertView[] {
+  return db
+    .prepare(
+      `SELECT a.*, u.name AS owner_name FROM alerts a
+       JOIN users u ON u.id = a.user_id ORDER BY u.name, a.created_at`,
+    )
+    .all()
+    .map((row) => ({
+      ...withoutOwner(toAlert(db, row)),
+      ownerName: text(row, 'owner_name'),
+      connectionLabels: connectionLabelsOf(db, text(row, 'id')),
+    }));
 }

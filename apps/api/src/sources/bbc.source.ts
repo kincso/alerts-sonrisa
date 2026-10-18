@@ -16,6 +16,15 @@ function textOf(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
+/**
+ * The guid's `#n` suffix changes when a story is updated (F6, testing.md S2-12), so it
+ * is dropped: an updated story keeps its id and is not sent again (DS9, revised).
+ */
+function withoutSuffix(guid: string): string {
+  const hash = guid.indexOf('#');
+  return hash === -1 ? guid : guid.slice(0, hash);
+}
+
 /** One RSS item → event, or undefined if guid, title or date is missing (design.md §6). */
 function toEvent(item: unknown): NewEvent | undefined {
   if (!isRecord(item)) return undefined;
@@ -25,7 +34,7 @@ function toEvent(item: unknown): NewEvent | undefined {
   const time = pubDate === undefined ? NaN : Date.parse(pubDate);
   if (!guid || !title || Number.isNaN(time)) return undefined;
   return {
-    sourceEventId: guid, // full guid including #n (DS9, F6)
+    sourceEventId: withoutSuffix(guid),
     title,
     summary: textOf(item['description']) ?? '',
     url: textOf(item['link']),

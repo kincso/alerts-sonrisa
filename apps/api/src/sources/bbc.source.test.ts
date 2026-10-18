@@ -14,7 +14,7 @@ describe('bbcSource.normalise', () => {
     const [first] = bbcSource.normalise(fixture);
 
     expect(first).toEqual({
-      sourceEventId: 'https://www.bbc.co.uk/news/articles/c6d937wedj7jo#0',
+      sourceEventId: 'https://www.bbc.co.uk/news/articles/c6d937wedj7jo',
       title:
         'Violent clashes, looting and buildings ablaze in France as over 1,000 arrested after protests',
       summary:
@@ -30,9 +30,20 @@ describe('bbcSource.normalise', () => {
     expect([...severities]).toEqual(['medium']);
   });
 
-  it('keeps the full guid, #n suffix included (DS9)', () => {
+  // testing.md S4-15 (F6, DS9 revised): the #n suffix changes when a story is updated.
+  it('drops the #n suffix from the guid', () => {
     const ids = bbcSource.normalise(fixture).map((e) => e.sourceEventId);
-    expect(ids).toContain('https://www.bbc.co.uk/news/articles/cqe9lx54g7x9o#1');
+    expect(ids).toContain('https://www.bbc.co.uk/news/articles/cqe9lx54g7x9o');
+    expect(ids.some((id) => id.includes('#'))).toBe(false);
+  });
+
+  it('gives an updated story (#0 → #1) the same id, and keeps a guid without #', () => {
+    const item = (guid: string) =>
+      `<item><title>A</title><guid>${guid}</guid><pubDate>Sat, 17 Oct 2026 12:00:00 GMT</pubDate></item>`;
+    const ids = bbcSource
+      .normalise(rss(item('https://x/a#0') + item('https://x/a#1') + item('https://x/b')))
+      .map((e) => e.sourceEventId);
+    expect(ids).toEqual(['https://x/a', 'https://x/a', 'https://x/b']);
   });
 
   // testing.md S2-4

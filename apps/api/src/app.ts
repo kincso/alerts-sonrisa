@@ -51,7 +51,7 @@ export function createApp({ db, channels, sources, poller, dispatcher }: AppDeps
   app.use('/api', meRoutes(db));
   app.use('/api', connectionRoutes(db, channels));
   app.use('/api', alertRoutes(db, sources));
-  app.use('/api', adminRoutes({ db, sources, poller, dispatcher }));
+  app.use('/api', adminRoutes({ db, sources, channels, poller, dispatcher }));
 
   app.use(handleError);
   return app;

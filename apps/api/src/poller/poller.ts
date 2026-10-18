@@ -15,7 +15,10 @@ export interface PollerOptions {
 }
 
 export interface Poller {
-  /** One cycle for one source. Never throws: failures come back as status 'failed'. */
+  /**
+   * One cycle for one source. Failures come back as status 'failed'; only a DB error in the
+   * enabled check before the cycle starts can reject.
+   */
   pollSource(source: Source): Promise<PollResult>;
   pollAll(): Promise<PollResult[]>;
   /** Polls now and then every `intervalMs` (A5). Returns a stop function. */
@@ -55,7 +58,7 @@ export function createPoller(
       return { result, inserted };
     } catch (err) {
       const error = errorMessage(err);
-      recordPoll(db, source.id, error);
+      recordFailure(source.id, error);
       const result: PollResult = {
         sourceId: source.id,
         status: 'failed',
@@ -64,6 +67,15 @@ export function createPoller(
         error,
       };
       return { result, inserted: [] };
+    }
+  }
+
+  /** Recording the failure can fail too (DB gone, S2 review m2): logged, so the cycle still ends. */
+  function recordFailure(sourceId: string, error: string): void {
+    try {
+      recordPoll(db, sourceId, error);
+    } catch (recordErr) {
+      console.error(`Could not record the failed poll of ${sourceId}:`, recordErr);
     }
   }
 
@@ -93,7 +105,7 @@ export function createPoller(
 
   function start(intervalMs: number): () => void {
     const tick = () => {
-      // pollSource doesn't throw; this only guards against a DB error in recordPoll.
+      // Only guards against a DB error in pollSource's enabled check.
       pollAll().catch((err: unknown) => console.error('Poll cycle failed:', err));
     };
     tick();

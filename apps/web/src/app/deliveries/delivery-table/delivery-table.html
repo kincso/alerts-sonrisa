@@ -1,0 +1,81 @@
+<table class="data-table">
+  <caption class="cdk-visually-hidden">
+    {{
+      caption()
+    }}
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">Time</th>
+      @if (showUser()) {
+        <th scope="col">User</th>
+      }
+      <th scope="col">Alert</th>
+      <th scope="col">Event</th>
+      <th scope="col">Connection</th>
+      <th scope="col">Status</th>
+      <th scope="col">Preview</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of rows(); track row.delivery.id) {
+      <!-- One wrapper per cell: on narrow screens the cell is a label + value grid. -->
+      <tr>
+        <td data-label="Time">
+          <div>
+            <time [attr.datetime]="row.delivery.createdAt">{{
+              row.delivery.createdAt | date: 'medium'
+            }}</time>
+          </div>
+        </td>
+        @if (showUser()) {
+          <td data-label="User">
+            <div>{{ row.userName }}</div>
+          </td>
+        }
+        <td data-label="Alert">
+          <div>{{ row.alert }}</div>
+        </td>
+        <td data-label="Event">
+          <div>
+            @if (row.delivery.event; as event) {
+              @if (event.url) {
+                <a [href]="event.url" target="_blank" rel="noopener">{{ event.title }}</a>
+              } @else {
+                {{ event.title }}
+              }
+              <span class="muted"> · {{ row.severity }}</span>
+            } @else {
+              <span class="muted">—</span>
+            }
+          </div>
+        </td>
+        <td data-label="Connection">
+          <div>
+            {{ row.delivery.connectionLabel }}
+            <span class="muted"> · {{ row.delivery.channelType }}</span>
+          </div>
+        </td>
+        <td data-label="Status">
+          <div>
+            <span class="status" [class]="'status-' + row.delivery.status">{{ row.status }}</span>
+            @if (row.delivery.error) {
+              <span class="error">{{ row.delivery.error }}</span>
+            }
+          </div>
+        </td>
+        <td data-label="Preview">
+          <div>
+            @if (row.delivery.previewUrl) {
+              <a [href]="row.delivery.previewUrl" target="_blank" rel="noopener"
+                >Open email<span class="cdk-visually-hidden"> preview (opens in a new tab)</span></a
+              >
+            } @else {
+              <span class="muted">—</span>
+            }
+          </div>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

@@ -129,6 +129,23 @@ describe('alerts, sources and deliveries API', () => {
     expect(await fieldErrorsFor(input({ connectionIds: [] }))).toEqual(['connectionIds']);
   });
 
+  // testing.md S3-22 (S3 review m1): a wrong type must not widen the alert to every event.
+  it('returns 400 when keywords is present but not a list of strings', async () => {
+    expect(await fieldErrorsFor({ ...input(), keywords: 'Peru' })).toEqual(['keywords']);
+    expect(await fieldErrorsFor({ ...input(), keywords: ['Peru', 5] })).toEqual(['keywords']);
+    expect(await fieldErrorsFor({ ...input(), keywords: null })).toEqual(['keywords']);
+
+    const withoutKeywords: Partial<AlertInput> = input();
+    delete withoutKeywords.keywords;
+    const res = await api.call('/api/me/alerts', {
+      user: 'alice',
+      method: 'POST',
+      body: withoutKeywords,
+    });
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as Alert).keywords).toEqual([]);
+  });
+
   it("rejects another user's or an unknown connection with the same message (DS12)", async () => {
     const res = await api.call('/api/me/alerts', {
       user: 'alice',

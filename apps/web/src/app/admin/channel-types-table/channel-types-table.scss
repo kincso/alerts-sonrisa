@@ -1,0 +1,12 @@
+.note {
+  margin: 0.25rem 0 0;
+  font: var(--mat-sys-body-small);
+}
+
+.note:empty {
+  display: none;
+}
+
+.error {
+  color: var(--mat-sys-error);
+}

@@ -34,6 +34,7 @@ Entities: `User`, `UserSummary`, `ChannelConnection`, `Alert`, `Event`, `Deliver
 Channel metadata: `ChannelField { key, label, type: 'text' | 'email' | 'url', required }`, `ChannelDescriptor { type, label, fields }`, `FieldErrors = Record<string, string>`.
 Requests: `ConnectionInput`, `AlertInput`, `AlertActivePatch`, `EnabledPatch`, `SimulateEventInput`.
 Responses: `SendResult`, `DeliveryView`, `PollResult`, `ConnectionInUseError`, `ApiError`.
+Admin responses (S4, `admin.ts`): `AdminAlertView` (`Alert` + `ownerName`, `connectionLabels`), `AdminDeliveryView` (`DeliveryView` + `userName`), `SourceHealth` (`SourceSummary` + `enabledAt`, `lastPollAt?`, `lastError?`). Names instead of ids, decisions.md S4-2.
 
 ---
 
@@ -44,6 +45,7 @@ Responses: `SendResult`, `DeliveryView`, `PollResult`, `ConnectionInUseError`, `
 interface Source {
   id: SourceId;
   label: string;
+  fixedSeverity?: Severity;                         // every item gets this severity (S3-3)
   fetchRaw(signal: AbortSignal): Promise<string>;   // I/O only
   normalise(raw: string): NewEvent[];               // pure; severity is set here
 }
@@ -61,7 +63,7 @@ interface NotificationChannel {
 
 **Adding a channel (e.g. Teams):** write one adapter file that implements `NotificationChannel`, add one line to the channel registry, and add one `channel_types` seed row. `GET /channels` exposes its fields and the web builds the connection form from them. The matcher, poller and dispatcher stay unchanged. The fake-channel component test (S1) backs this up.
 
-**Adding a source:** write one adapter that implements `Source` and add one registry entry plus a `sources` seed row. Source-specific parsing and severity logic stay in the adapter's `normalise` (D1).
+**Adding a source:** write one adapter that implements `Source` and add one registry entry plus a `sources` seed row. Source-specific parsing and severity logic stay in the adapter's `normalise` (D1). If `normalise` gives every item the same severity, set `fixedSeverity`: the alert form and the simulate form then lock Severity to it (decisions.md S3-2, S3-3).
 
 The matcher only sees `Event` and `Alert`. The dispatcher looks up `registry.get(connection.type)` and knows no specific channel.
 
@@ -76,6 +78,7 @@ flowchart LR
   P --> N[Normalise<br/>Source.normalise]
   N --> D[Dedupe<br/>INSERT … ON CONFLICT DO NOTHING]
   D -->|new events only| B{occurredAt ≥<br/>source.enabled_at?}
+  D -.->|simulate, existing sourceEventId:<br/>the stored event again, S3-1| B
   B -->|no| X[stored, not matched]
   B -->|yes| M[Match<br/>matchAlert]
   M --> C[Claim delivery row<br/>status = pending]
@@ -130,12 +133,12 @@ All paths are under `/api`. **Public** = mounted before the auth middleware. **U
 | GET | `/me/deliveries` | → `DeliveryView[]` (newest first) | user | S3 |
 | POST | `/admin/simulate-event` | `SimulateEventInput { sourceId, title, summary?, severity, sourceEventId? }` → `{ event, deliveries }` | admin | S3 |
 | POST | `/admin/sources/:id/poll` | → `PollResult` | admin | S2 |
-| GET | `/admin/alerts` | → `Alert[]` with owner name | admin | S4 |
-| GET | `/admin/deliveries` | → `DeliveryView[]` | admin | S4 |
-| GET | `/admin/sources` | → `SourceSummary[]` with `lastPollAt`, `lastError` | admin | S4 |
-| PATCH | `/admin/sources/:id` | `EnabledPatch` → `SourceSummary` (re-enabling sets `enabled_at`) | admin | S4 |
-| GET | `/admin/channels` | → `ChannelTypeSummary[]` | admin | S4 |
-| PATCH | `/admin/channels/:type` | `EnabledPatch` → `ChannelTypeSummary` | admin | S4 |
+| GET | `/admin/alerts` | → `AdminAlertView[]`: every user's alerts with owner name and connection labels (S4-2) | admin | S4 |
+| GET | `/admin/deliveries` | → `AdminDeliveryView[]`: every user's rows with the user name, newest first, test rows included | admin | S4 |
+| GET | `/admin/sources` | → `SourceHealth[]` (`enabledAt`, `lastPollAt`, `lastError`) | admin | S4 |
+| PATCH | `/admin/sources/:id` | `EnabledPatch` → `SourceHealth`. Turning a disabled source on moves `enabled_at` to now; any other PATCH leaves it (S4-3). 404 unknown id · 400 `fieldErrors.enabled` | admin | S4 |
+| GET | `/admin/channels` | → `ChannelTypeSummary[]` (`type, label, enabled`), registered types only | admin | S4 |
+| PATCH | `/admin/channels/:type` | `EnabledPatch` → `ChannelTypeSummary` (effects: S1-6). 404 unknown type · 400 `fieldErrors.enabled` | admin | S4 |
 
 Errors: `ApiError { message }`, plus `fieldErrors` on 400. A resource that belongs to another user returns 404, so the API never reveals whether it exists.
 
@@ -153,8 +156,8 @@ Page components load data and hold state. Display components take inputs and emi
 | `/connections` | `ConnectionsPage` | `ConnectionList`, `ConnectionFormDialog` → `GeneratedChannelForm` (typed `FormGroup` of string controls from `GET /channels`), `SendTestButton` (pending + result + preview link), 409 "used by these alerts" message |
 | `/alerts` | `AlertsPage` | `AlertList` (active toggle with pending/failure state) |
 | `/alerts/new`, `/alerts/:id` | `AlertEditPage` | `AlertForm`: name, source select, keyword chips, min severity, connection multi-select, "BBC items are always medium" hint |
-| `/history` | `HistoryPage` | `DeliveryTable` (event, alert or "Test", connection, status, time, preview link) |
-| `/admin` (`adminGuard`, hides only) | `AdminPage` with tabs | `AdminAlertsTable`, `DeliveryTable` (reused), `SourceHealthTable` (enable toggle, poll now), `ChannelTypesTable` (enable toggle), `SimulateEventForm` |
+| `/history` | `HistoryPage` | `DeliveryTable` (time, alert or "Test", event + severity, connection · type, status + error, preview link), Refresh |
+| `/admin` (`adminGuard` as `canMatch`: hides only, sends non-admins to `/alerts`; the shell also leaves `/admin` when the user switches to a non-admin) | `AdminPage` with tabs; each tab is a small container that loads its data on first open (S4-5) | Delivery log → `DeliveryTable` (reused, with a User column); Sources → `SourceHealthTable` (enable switch, poll now); Channels → `ChannelTypesTable` (enable switch); All alerts → `AdminAlertsTable`; Simulate event → `SimulateEventForm` (severity locked for a `fixedSeverity` source, S4-4) |
 
 Every data view handles loading, empty and error states. Routes are lazy-loaded. The layout works down to 375px.
 
@@ -181,7 +184,7 @@ HTTP 200, `text/xml`, RSS 2.0, 23 items.
 
 | `Event` field | Mapped from | Status |
 |---|---|---|
-| `sourceEventId` | `<guid isPermaLink="false">`, full value including `#n` (DS9) | VERIFIED field. **Stability UNVERIFIED (F6)**: the `#0`–`#3` suffix may change when a story is updated. Check in S2 |
+| `sourceEventId` | `<guid isPermaLink="false">` without its `#n` suffix (DS9, revised 2026-10-18) | VERIFIED: the suffix changes when a story is updated (F6, testing.md S2-12: 3 of 22 articles went `#0` → `#1`), so it is dropped and an updated story is not sent again |
 | `title` | `<title>` (CDATA) | VERIFIED |
 | `summary` | `<description>` (CDATA) | VERIFIED |
 | `url` | `<link>` (includes `at_medium`/`at_campaign` tracking params) | VERIFIED |
@@ -194,7 +197,7 @@ Attribution: notifications name the source (A25). The BBC feed's `<copyright>` p
 
 ## 7. Known limits and open points
 
-- **F6:** BBC guid stability (DS9). Verify in S2; if the suffix changes, the fix is only in the BBC adapter.
+- ~~**F6:** BBC guid stability (DS9).~~ Closed 2026-10-18: the suffix changes, so the BBC adapter drops it (DS9 revised). Like DS11, an updated story does not re-alert.
 - **DS11:** USGS magnitude revisions don't re-alert.
 - **DS6, DS7:** `GET /users` and the preview links are public. Mock-level only.
 - A crash mid-send leaves a delivery `pending` for good (no retry, A16).

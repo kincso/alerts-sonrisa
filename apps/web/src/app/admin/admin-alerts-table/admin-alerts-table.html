@@ -1,0 +1,43 @@
+<table class="data-table">
+  <caption class="cdk-visually-hidden">
+    All alerts
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">Owner</th>
+      <th scope="col">Alert</th>
+      <th scope="col">Source</th>
+      <th scope="col">Keywords</th>
+      <th scope="col">Severity</th>
+      <th scope="col">Sends to</th>
+      <th scope="col">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of rows(); track row.alert.id) {
+      <tr>
+        <td data-label="Owner">
+          <div>{{ row.alert.ownerName }}</div>
+        </td>
+        <td data-label="Alert">
+          <div>{{ row.alert.name }}</div>
+        </td>
+        <td data-label="Source">
+          <div>{{ row.source }}</div>
+        </td>
+        <td data-label="Keywords">
+          <div>{{ row.keywords }}</div>
+        </td>
+        <td data-label="Severity">
+          <div>{{ row.severity }}</div>
+        </td>
+        <td data-label="Sends to">
+          <div>{{ row.targets }}</div>
+        </td>
+        <td data-label="Status">
+          <div>{{ row.alert.active ? 'Active' : 'Paused' }}</div>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

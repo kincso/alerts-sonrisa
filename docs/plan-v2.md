@@ -75,12 +75,14 @@ Times are in hours. **FE** = frontend, **BE** = backend, **CI** = local test gat
 | S0 | Scaffold + sync the source of truth | 0.25 | 0.65 | 0.1 | 0.25 | 1.25 | 0.75 | 1.25 |
 | S1 | Identity + channel connections + Send test | 1.75 | 0.75 | – | 0.1 | 2.6 | 1.15 | 3.85 |
 | S2 | Sources + poller | – | 0.75 | – | 0.1 | 0.85 | 0.35 | 4.7 |
-| S3 | Alerts + matcher + delivery pipeline (end-to-end) | 1.25 | 1.0 | – | 0.1 | 2.35 | | 7.05 |
-| S4 | History + admin view + a11y pass | 1.75 | 0.15 | – | 0.1 | 2.0 | | 9.05 |
+| S3 | Alerts + matcher + delivery pipeline (end-to-end) | 1.25 | 1.0 | – | 0.1 | 2.35 | 0.75 | 7.05 |
+| S4 | History + admin view + a11y pass | 1.75 | 0.15 | – | 0.1 | 2.0 | 0.6 | 9.05 |
 | S5 | Docs wrap-up + fresh-clone check | – | – | – | 0.5 | 0.5 | | 9.55 |
 | | **Total** | **5.0** | **3.3** | **0.1** | **1.15** | **9.55** | | |
 
 **Actual** (added 2026-10-18, S2 review M2) is taken from commit times: from the previous merge to the slice's merge (S0, S1) or to the slice commit (S2, before its review). S0 and S1 include their review and fixes; S2 does not yet. Reading or setup before the first session is not counted, so these are lower bounds. After S2: 2.25h actual against 4.7h estimated, so no cut from the cut order is due before S3.
+
+**(added 2026-10-18)** S3 and S4 are counted to the slice commit, so their reviews and fixes are not included. S3: S2 merge (00:34) → `feat: alerts CRUD…` (01:18). Its review fixes ran the next morning (commits 08:35–08:41); the overnight gap can't be split into work and break, so they are left out. S4: S3 merge (08:41) → `feat(web): notification history and admin view` (09:17); the F6 fix after it (`test: F6 BBC guid cases`, `fix(api): …`, until 09:27) adds about 0.15h. After S4: 3.6h actual against 9.05h estimated. None of the cut order was used: the axe run, the alert form test, the channel toggle and the simulate form are all in.
 
 ### S0 – Scaffold + sync the source of truth · 1.25h
 **Goal:** the tooling risk (workspaces + Angular + shared package + `node:sqlite`) is proven, and the docs agree with each other before any feature code exists.
@@ -148,7 +150,7 @@ Tasks (BE)
 - USGS adapter: magnitude → severity bands, with the band edges logged in `decisions.md` (A1).
 - BBC adapter: always `medium`, set only in its normalise step (D1).
 - Poller:
-  - `POLL_INTERVAL_MS` (default 3 min per A5, 15s in dev);
+  - `POLL_INTERVAL_MS` (default 3 min per A5; dev sets 15s in `.env`, decisions.md S2-3);
   - skip if a poll is already running;
   - skip disabled sources;
   - unique on `sourceId + sourceEventId` (A7);
@@ -168,7 +170,7 @@ Commit: `feat(api): USGS and BBC source adapters with interval poller`
 ### S3 – Alerts + matcher + delivery pipeline (end-to-end) · 2.35h
 **Goal:** event → matching alert → email/Slack → delivery log, using endpoints that already exist (S1) or are built here.
 
-> **Reminder before starting S3 (F6, decisions.md S2-6):** take the second BBC snapshot (`curl -o process/f6/bbc-world-<UTC time>.xml https://feeds.bbci.co.uk/news/world/rss.xml`), compare its guids with snapshot 1 in `process/f6/`, and record the result in testing.md S2-12.
+> **Reminder before starting S3 (F6, decisions.md S2-6):** take the second BBC snapshot (`curl -o process/f6/bbc-world-<UTC time>.xml https://feeds.bbci.co.uk/news/world/rss.xml`), compare its guids with snapshot 1 in `process/f6/`, and record the result in testing.md S2-12. _Done 2026-10-18 in S4, not before S3 (decisions.md S2-6); F6 is closed._
 
 Tasks
 - **BE (1.0):**
@@ -217,7 +219,7 @@ Tasks
 
 Validation
 - As a user: the Admin link is hidden; `/admin` is blocked by the guard; the API returns 403.
-- As admin: disable BBC → "poll now" skips it; disable Slack → a new simulated match skips Slack connections; simulate an event → it appears in the admin log and in the user's history.
+- As admin: disable BBC → "poll now" skips it; disable Slack → a new simulated match skips Slack connections; simulate an event → it appears in the admin log (after Refresh) and in the user's history.
 - The axe score is recorded in `testing.md`.
 
 Commits, in this order (CLAUDE.md "Testing", S3 review C1):
@@ -265,6 +267,7 @@ Slices S0–S5.
 | General API input validation | v1 Phase 4 | Reduced to channel `validate()` + required fields | ~0.15h | None |
 | Repository round-trip tests | v1 Phase 1 | Out of scope (tests cover the adapters, matcher, dispatcher and 2 components) | ~0.15h | None (matches the out-of-scope test line) |
 | CI pipeline (GitHub Actions) | v2 instructions | Out of scope; local `npm test` gate only | ~0.25h | None (D4; already out of scope) |
+| Admin delivery log reloads by itself when its tab is reopened (S4 review M1) | S4 | Out of scope; Refresh button only (DoD 5) | ~0.1h | None |
 | Separate API phase | v1 Phase 4 | Removed; endpoints are built inside their slice | – | None |
 
 ### Out of scope
@@ -280,7 +283,7 @@ After cloning, a reviewer with the pinned Node version can:
 2. Switch between two users and an admin with the switcher, which is labelled as a mock.
 3. Add an email and a Slack connection through the generated form, and use "Send test": the email gives a preview link, and Slack gives a real message or a visible dry run.
 4. Create, edit, pause and delete an alert.
-5. As admin, simulate a matching event → see it in the user's history and the admin delivery log. Simulating it again with the same `sourceEventId` sends nothing.
+5. As admin, simulate a matching event → see it in the user's history and the admin delivery log (press Refresh on the log; it loads once when `/admin` opens, decisions.md S4-5). Simulating it again with the same `sourceEventId` sends nothing.
 6. See source health showing either recent USGS/BBC polls or a visible error. Disabling a source or a channel takes effect.
 7. As a user, not be able to open the admin view (guard + 403).
 8. Run `npm test` and see it pass.
@@ -365,6 +368,6 @@ Never cut: the pipeline, the generated form (A12), simulate event (A18), the adm
 - ~~**F5:** keyword any-of.~~ Closed by D8 (2026-10-17): any-of. A per-alert any/all choice is Stretch.
 - ~~**A13:** what happens to alerts when a connection is deleted.~~ Closed by D6 (2026-10-17): the delete is blocked while alerts use the connection.
 
-- **F6:** whether the BBC `<guid>` `#n` suffix changes when a story is updated. The MVP uses the full guid (DS9); verify it in S2.
+- ~~**F6:** whether the BBC `<guid>` `#n` suffix changes when a story is updated.~~ Closed 2026-10-18: it does change (testing.md S2-12), so the `#n` suffix is stripped (decisions.md DS9, revised).
 
 These change no Group A decision, but `assumptions.md` should record them before or during the slice that needs them.
