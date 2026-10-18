@@ -13,3 +13,5 @@ export * from './identity';
 export * from './channels';
 export * from './errors';
 export * from './sources';
+export * from './alerts';
+export * from './deliveries';

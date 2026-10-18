@@ -1,9 +1,8 @@
 import type { ChannelConnection, SendResult } from '@alerts/shared';
 import type { Db } from '../db/database.ts';
-import { finishDelivery, insertPendingTestDelivery } from '../db/deliveries.ts';
-import { insertPreview } from '../db/previews.ts';
+import { insertPendingTestDelivery } from '../db/deliveries.ts';
+import { deliver } from './deliver.ts';
 import type { NotificationChannel, Notification } from './notification-channel.ts';
-import { SEND_TIMEOUT_MS, withTimeout } from '../util/with-timeout.ts';
 
 function testNotification(connection: ChannelConnection): Notification {
   return {
@@ -14,34 +13,16 @@ function testNotification(connection: ChannelConnection): Notification {
   };
 }
 
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
-
 /**
- * "Send test" (A18, DS8): claim a `kind = 'test'` delivery row, send once with the
- * timeout, store the email preview, record the result. Never throws for a send error.
+ * "Send test" (A18, DS8): claim a `kind = 'test'` delivery row, then send once and
+ * record it like any delivery. Never throws for a send error.
  */
-export async function sendTest(
+export function sendTest(
   db: Db,
   userId: string,
   connection: ChannelConnection,
   channel: NotificationChannel,
 ): Promise<SendResult> {
   const deliveryId = insertPendingTestDelivery(db, userId, connection);
-  try {
-    const outcome = await withTimeout(
-      (signal) => channel.send(testNotification(connection), connection.config, signal),
-      SEND_TIMEOUT_MS,
-    );
-    const previewId = outcome.preview ? insertPreview(db, outcome.preview) : null;
-    finishDelivery(db, deliveryId, outcome, previewId);
-    return previewId
-      ? { status: outcome.status, previewUrl: `/api/previews/${previewId}` }
-      : { status: outcome.status };
-  } catch (err) {
-    const result: SendResult = { status: 'failed', error: errorMessage(err) };
-    finishDelivery(db, deliveryId, result, null);
-    return result;
-  }
+  return deliver(db, deliveryId, channel, testNotification(connection), connection.config);
 }

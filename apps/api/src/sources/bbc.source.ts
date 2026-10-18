@@ -1,8 +1,12 @@
 import { XMLParser } from 'fast-xml-parser';
+import type { Severity } from '@alerts/shared';
 import { isRecord } from '../util/is-record.ts';
 import { fetchText, type NewEvent, type Source } from './source.ts';
 
 const FEED_URL = 'https://feeds.bbci.co.uk/news/world/rss.xml';
+
+/** News has no severity signal yet (D1); set only in this adapter. */
+const NEWS_SEVERITY: Severity = 'medium';
 
 // Attributes (e.g. guid isPermaLink) are ignored, so <guid> parses to its text.
 // Values stay strings (no number parsing), and `item` is always an array.
@@ -25,7 +29,7 @@ function toEvent(item: unknown): NewEvent | undefined {
     title,
     summary: textOf(item['description']) ?? '',
     url: textOf(item['link']),
-    severity: 'medium', // news has no severity signal yet (D1); set only here
+    severity: NEWS_SEVERITY,
     occurredAt: new Date(time).toISOString(),
   };
 }
@@ -42,6 +46,7 @@ function normalise(raw: string): NewEvent[] {
 export const bbcSource: Source = {
   id: 'bbc',
   label: 'BBC World News',
+  fixedSeverity: NEWS_SEVERITY,
   fetchRaw: (signal) => fetchText(FEED_URL, signal),
   normalise,
 };

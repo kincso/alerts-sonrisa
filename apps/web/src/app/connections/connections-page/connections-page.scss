@@ -22,3 +22,21 @@ h2 {
   border-radius: 12px;
   text-align: center;
 }
+
+.blocked {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--mat-sys-error);
+  border-radius: 12px;
+  color: var(--mat-sys-on-error-container);
+  background: var(--mat-sys-error-container);
+
+  p,
+  ul {
+    margin: 0 0 0.5rem;
+  }
+
+  a {
+    color: inherit;
+  }
+}

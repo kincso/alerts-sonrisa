@@ -1,4 +1,4 @@
-import type { PollResult } from '@alerts/shared';
+import type { Event, PollResult } from '@alerts/shared';
 import type { Db } from '../db/database.ts';
 import { insertNewEvents } from '../db/events.ts';
 import { findSource, recordPoll } from '../db/sources.ts';
@@ -7,6 +7,12 @@ import type { Source } from '../sources/source.ts';
 import { withTimeout } from '../util/with-timeout.ts';
 
 export const POLL_TIMEOUT_MS = 10_000;
+
+export interface PollerOptions {
+  timeoutMs?: number;
+  /** Gets each poll's newly stored events; server.ts passes the dispatcher. */
+  onNewEvents?: (events: Event[]) => Promise<unknown>;
+}
 
 export interface Poller {
   /** One cycle for one source. Never throws: failures come back as status 'failed'. */
@@ -24,7 +30,7 @@ function errorMessage(err: unknown): string {
 export function createPoller(
   db: Db,
   sources: SourceRegistry,
-  { timeoutMs = POLL_TIMEOUT_MS } = {},
+  { timeoutMs = POLL_TIMEOUT_MS, onNewEvents }: PollerOptions = {},
 ): Poller {
   const running = new Set<string>();
   const skipped = (sourceId: string): PollResult => ({
@@ -34,22 +40,40 @@ export function createPoller(
     inserted: 0,
   });
 
-  async function fetchAndStore(source: Source): Promise<PollResult> {
+  async function fetchAndStore(source: Source): Promise<{ result: PollResult; inserted: Event[] }> {
     try {
       const raw = await withTimeout((signal) => source.fetchRaw(signal), timeoutMs);
       const events = source.normalise(raw);
       const inserted = insertNewEvents(db, source.id, events);
       recordPoll(db, source.id, null);
-      return {
+      const result: PollResult = {
         sourceId: source.id,
         status: 'ok',
         fetched: events.length,
         inserted: inserted.length,
       };
+      return { result, inserted };
     } catch (err) {
       const error = errorMessage(err);
       recordPoll(db, source.id, error);
-      return { sourceId: source.id, status: 'failed', fetched: 0, inserted: 0, error };
+      const result: PollResult = {
+        sourceId: source.id,
+        status: 'failed',
+        fetched: 0,
+        inserted: 0,
+        error,
+      };
+      return { result, inserted: [] };
+    }
+  }
+
+  /** A dispatch problem is not a source problem: it is logged and the poll stays 'ok'. */
+  async function notify(sourceId: string, events: Event[]): Promise<void> {
+    if (events.length === 0 || !onNewEvents) return;
+    try {
+      await onNewEvents(events);
+    } catch (err) {
+      console.error(`Dispatch after polling ${sourceId} failed:`, err);
     }
   }
 
@@ -57,7 +81,9 @@ export function createPoller(
     if (!findSource(db, source.id)?.enabled || running.has(source.id)) return skipped(source.id);
     running.add(source.id);
     try {
-      return await fetchAndStore(source);
+      const { result, inserted } = await fetchAndStore(source);
+      await notify(source.id, inserted);
+      return result;
     } finally {
       running.delete(source.id);
     }

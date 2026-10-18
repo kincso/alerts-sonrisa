@@ -7,6 +7,7 @@ import { createChannelRegistry } from './channels/registry.ts';
 import { slackChannel } from './channels/slack.channel.ts';
 import { openDatabase, type Db } from './db/database.ts';
 import { seed } from './db/seed.ts';
+import { createDispatcher } from './dispatcher/dispatcher.ts';
 import { createPoller } from './poller/poller.ts';
 import { bbcSource } from './sources/bbc.source.ts';
 import { createSourceRegistry } from './sources/registry.ts';
@@ -40,8 +41,9 @@ export function startServer(app: express.Express, db: Db): TestServer {
 }
 
 /**
- * The real app with email in log-only mode (no SMTP env) and Slack. The poller is
- * created but never started; pass fake `sources` for tests that poll.
+ * The real app with email in log-only mode (no SMTP env) and Slack, wired like
+ * server.ts. The poller is created but never started; pass fake `sources` for tests
+ * that poll.
  */
 export function startTestApp(sources: readonly Source[] = [usgsSource, bbcSource]): TestServer {
   const db = openDatabase(':memory:');
@@ -52,6 +54,9 @@ export function startTestApp(sources: readonly Source[] = [usgsSource, bbcSource
     channels.all().map((c) => c.type),
     sources,
   );
-  const poller = createPoller(db, sourceRegistry);
-  return startServer(createApp({ db, channels, sources: sourceRegistry, poller }), db);
+  const dispatcher = createDispatcher(db, channels);
+  const poller = createPoller(db, sourceRegistry, {
+    onNewEvents: (events) => dispatcher.dispatch(events),
+  });
+  return startServer(createApp({ db, channels, sources: sourceRegistry, poller, dispatcher }), db);
 }

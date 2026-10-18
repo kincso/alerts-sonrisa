@@ -5,6 +5,7 @@ import { createEmailChannel } from './channels/email.channel.ts';
 import { createChannelRegistry } from './channels/registry.ts';
 import { slackChannel } from './channels/slack.channel.ts';
 import { openDatabase } from './db/database.ts';
+import { createDispatcher } from './dispatcher/dispatcher.ts';
 import { seed } from './db/seed.ts';
 import { createPoller } from './poller/poller.ts';
 import { bbcSource } from './sources/bbc.source.ts';
@@ -33,9 +34,11 @@ seed(
   channels.all().map((c) => c.type),
   sources.all(),
 );
-const poller = createPoller(db, sources);
+const dispatcher = createDispatcher(db, channels);
+// A6: matches are sent right after each poll stores them.
+const poller = createPoller(db, sources, { onNewEvents: (events) => dispatcher.dispatch(events) });
 
-createApp({ db, channels, sources, poller }).listen(port, () => {
+createApp({ db, channels, sources, poller, dispatcher }).listen(port, () => {
   console.log(`API listening on http://localhost:${port} (database: ${dbPath})`);
   console.log(`Polling ${sources.all().length} sources every ${pollIntervalMs / 1000}s`);
   poller.start(pollIntervalMs);

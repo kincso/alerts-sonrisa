@@ -27,3 +27,12 @@ export interface PollResult {
   inserted: number;
   error?: string;
 }
+
+/** GET /api/sources: what the alert form's source select needs. */
+export interface SourceSummary {
+  id: SourceId;
+  label: string;
+  enabled: boolean;
+  /** Set when every item from this source has the same severity (decisions.md S3-3). */
+  fixedSeverity?: Severity;
+}

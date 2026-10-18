@@ -1,0 +1,41 @@
+@let page = view();
+<section class="page" aria-labelledby="alert-edit-title">
+  <header class="header">
+    <h2 id="alert-edit-title">{{ id() ? 'Edit alert' : 'New alert' }}</h2>
+    <p class="intro">Get a message when an event from the source matches these conditions.</p>
+  </header>
+
+  @if (page.status === 'idle') {
+    <p>Pick a user in "Acting as" to edit their alerts.</p>
+  } @else if (page.status === 'loading') {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading the alert form" />
+  } @else if (page.status === 'error') {
+    <div class="state" role="alert">
+      <p>Could not load what the alert form needs.</p>
+      <button mat-stroked-button type="button" (click)="retry()">Try again</button>
+    </div>
+  } @else if (page.status === 'not-found') {
+    <div class="state" role="alert">
+      <p>This alert doesn't exist, or it belongs to another user.</p>
+      <a mat-stroked-button routerLink="/alerts">Back to alerts</a>
+    </div>
+  } @else if (page.status === 'ready') {
+    @if (page.connections.length === 0) {
+      <div class="state">
+        <p>An alert needs somewhere to send to. Add a connection first.</p>
+        <a mat-flat-button routerLink="/connections">Add a connection</a>
+      </div>
+    } @else {
+      <app-alert-form
+        [sources]="page.sources"
+        [connections]="page.connections"
+        [alert]="page.alert"
+        [saving]="saving()"
+        [serverErrors]="serverErrors()"
+        (save)="save($event)"
+      >
+        <a mat-button routerLink="/alerts">Cancel</a>
+      </app-alert-form>
+    }
+  }
+</section>
