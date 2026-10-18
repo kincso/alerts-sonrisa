@@ -184,6 +184,29 @@ describe('poller', () => {
     expect(received).toEqual([['1', '2'], ['3']]);
   });
 
+  // testing.md S3-20 (S3 review M1)
+  it('stores nothing from a cycle that fails partway, so the next cycle dispatches all of it', async () => {
+    const received: string[][] = [];
+    const notifying = createPoller(db, createSourceRegistry([a.source]), {
+      onNewEvents: (events) => {
+        received.push(events.map((e) => e.sourceEventId));
+        return Promise.resolve();
+      },
+    });
+    // The second item breaks NOT NULL after the first was inserted.
+    const valid = a.source.fetchRaw;
+    a.source.fetchRaw = () =>
+      Promise.resolve(JSON.stringify([item('1'), { ...item('2'), title: null }]));
+
+    const failed = await notifying.pollSource(a.source);
+    expect(failed.status).toBe('failed');
+    expect(eventCount(db, 'a')).toBe(0);
+
+    a.source.fetchRaw = valid;
+    await notifying.pollSource(a.source);
+    expect(received).toEqual([['1', '2']]);
+  });
+
   it('keeps the poll ok when onNewEvents fails', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const notifying = createPoller(db, createSourceRegistry([a.source]), {

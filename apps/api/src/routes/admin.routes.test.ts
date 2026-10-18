@@ -186,6 +186,21 @@ describe('POST /api/admin/simulate-event', () => {
     expect(body.deliveries).toEqual([]);
   });
 
+  // testing.md S3-21 (S3 review M2, decisions.md S3-2)
+  it("accepts only the source's fixed severity when it has one", async () => {
+    const news = { sourceId: 'bbc', title: 'Floods in Peru' } as const;
+
+    const high = await simulate({ ...news, severity: 'high' });
+    expect(high.status).toBe(400);
+    expect(((await high.json()) as ApiError).fieldErrors).toEqual({
+      severity: 'Items from BBC World News are always medium.',
+    });
+
+    const medium = await simulate({ ...news, severity: 'medium' });
+    expect(medium.status).toBe(200);
+    expect(((await medium.json()) as SimulateEventResult).event.severity).toBe('medium');
+  });
+
   it('returns 400 field errors, 403 for a user and 401 without a header', async () => {
     const bad = await simulate({ sourceId: 'nasa', severity: undefined });
     expect(bad.status).toBe(400);
