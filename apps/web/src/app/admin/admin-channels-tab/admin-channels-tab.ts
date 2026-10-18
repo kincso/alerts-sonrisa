@@ -21,7 +21,7 @@ export class AdminChannelsTab {
   private readonly currentUser = inject(CurrentUser);
 
   protected readonly channels = rxResource({
-    params: () => this.currentUser.userId(),
+    params: () => this.currentUser.adminId(),
     stream: () => this.adminApi.channels(),
   });
   protected readonly switchStates = signal<SwitchStates>({});

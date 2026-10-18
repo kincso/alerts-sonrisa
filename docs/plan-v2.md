@@ -77,12 +77,12 @@ Times are in hours. **FE** = frontend, **BE** = backend, **CI** = local test gat
 | S2 | Sources + poller | – | 0.75 | – | 0.1 | 0.85 | 0.35 | 4.7 |
 | S3 | Alerts + matcher + delivery pipeline (end-to-end) | 1.25 | 1.0 | – | 0.1 | 2.35 | 0.75 | 7.05 |
 | S4 | History + admin view + a11y pass | 1.75 | 0.15 | – | 0.1 | 2.0 | 0.6 | 9.05 |
-| S5 | Docs wrap-up + fresh-clone check | – | – | – | 0.5 | 0.5 | | 9.55 |
+| S5 | Docs wrap-up + fresh-clone check | – | – | – | 0.5 | 0.5 | 0.5 | 9.55 |
 | | **Total** | **5.0** | **3.3** | **0.1** | **1.15** | **9.55** | | |
 
 **Actual** (added 2026-10-18, S2 review M2) is taken from commit times: from the previous merge to the slice's merge (S0, S1) or to the slice commit (S2, before its review). S0 and S1 include their review and fixes; S2 does not yet. Reading or setup before the first session is not counted, so these are lower bounds. After S2: 2.25h actual against 4.7h estimated, so no cut from the cut order is due before S3.
 
-**(added 2026-10-18)** S3 and S4 are counted to the slice commit, so their reviews and fixes are not included. S3: S2 merge (00:34) → `feat: alerts CRUD…` (01:18). Its review fixes ran the next morning (commits 08:35–08:41); the overnight gap can't be split into work and break, so they are left out. S4: S3 merge (08:41) → `feat(web): notification history and admin view` (09:17); the F6 fix after it (`test: F6 BBC guid cases`, `fix(api): …`, until 09:27) adds about 0.15h. After S4: 3.6h actual against 9.05h estimated. None of the cut order was used: the axe run, the alert form test, the channel toggle and the simulate form are all in.
+**(added 2026-10-18)** S3 and S4 are counted to the slice commit, so their reviews and fixes are not included. S3: S2 merge (00:34) → `feat: alerts CRUD…` (01:18). Its review fixes ran the next morning (commits 08:35–08:41); the overnight gap can't be split into work and break, so they are left out. S4: S3 merge (08:41) → `feat(web): notification history and admin view` (09:17); the F6 fix after it (`test: F6 BBC guid cases`, `fix(api): …`, until 09:27) adds about 0.15h. After S4: 3.6h actual against 9.05h estimated. None of the cut order was used: the axe run, the alert form test, the channel toggle and the simulate form are all in. S5: S4 merge (10:02) → end of the S5 session work (about 10:30), before its commit and any review; about 4.1h actual in total against 9.55h estimated.
 
 ### S0 – Scaffold + sync the source of truth · 1.25h
 **Goal:** the tooling risk (workspaces + Angular + shared package + `node:sqlite`) is proven, and the docs agree with each other before any feature code exists.
@@ -237,6 +237,8 @@ Validation
 Commit: `docs: README, design, decisions and test results`
 
 No test commit: S5 adds no code. A fix found by the fresh-clone check gets its failing test first.
+
+**(revised 2026-10-18)** S5 adds two root scripts, `npm run build` and `npm run preview` (decisions.md S5-1), for the README's build and preview commands. They are scripts only, with no app code, so there is still no test commit.
 
 ---
 
