@@ -1,0 +1,42 @@
+<table class="data-table">
+  <caption class="cdk-visually-hidden">
+    Channel types
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">Channel</th>
+      <th scope="col">Enabled</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of rows(); track row.channel.type) {
+      <tr>
+        <td data-label="Channel">
+          <div>{{ row.channel.label }}</div>
+        </td>
+        <td data-label="Enabled">
+          <div>
+            <mat-slide-toggle
+              [checked]="row.checked"
+              [disabled]="row.state?.kind === 'pending'"
+              (change)="enabledChange.emit({ channel: row.channel, enabled: $event.checked })"
+            >
+              {{ row.checked ? 'On' : 'Off'
+              }}<span class="cdk-visually-hidden">: {{ row.channel.label }}</span>
+            </mat-slide-toggle>
+            <p class="note" aria-live="polite">
+              @if (row.state?.kind === 'pending') {
+                Saving…
+              }
+            </p>
+            @if (row.state; as state) {
+              @if (state.kind === 'error') {
+                <p class="note error" role="alert">{{ state.message }}</p>
+              }
+            }
+          </div>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

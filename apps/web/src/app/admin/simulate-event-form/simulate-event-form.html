@@ -1,0 +1,66 @@
+@let controls = form.controls;
+<form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <mat-form-field>
+    <mat-label>Source</mat-label>
+    <mat-select formControlName="sourceId" required>
+      @for (source of sources(); track source.id) {
+        <mat-option [value]="source.id">
+          {{ source.label }}{{ source.enabled ? '' : ' (disabled)' }}
+        </mat-option>
+      }
+    </mat-select>
+    @if (controls.sourceId.hasError('required')) {
+      <mat-error>Choose a source.</mat-error>
+    } @else if (controls.sourceId.hasError('server')) {
+      <mat-error>{{ controls.sourceId.getError('server') }}</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Title</mat-label>
+    <input matInput formControlName="title" required autocomplete="off" />
+    <mat-hint>Alerts match keywords in the title and summary.</mat-hint>
+    @if (controls.title.hasError('required')) {
+      <mat-error>Title is required.</mat-error>
+    } @else if (controls.title.hasError('server')) {
+      <mat-error>{{ controls.title.getError('server') }}</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Summary</mat-label>
+    <textarea matInput formControlName="summary" rows="2"></textarea>
+    <mat-hint>Optional.</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Severity</mat-label>
+    <mat-select formControlName="severity" required>
+      @for (severity of severities; track severity) {
+        <mat-option [value]="severity">{{ severityLabel(severity) }}</mat-option>
+      }
+    </mat-select>
+    @if (fixedSeverity(); as fixed) {
+      <mat-hint class="fixed-hint">Items from this source are always {{ fixed }}.</mat-hint>
+    }
+    @if (controls.severity.hasError('server')) {
+      <mat-error>{{ controls.severity.getError('server') }}</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Source event ID</mat-label>
+    <input matInput formControlName="sourceEventId" autocomplete="off" />
+    <mat-hint>Optional. Reuse an ID to check that nothing is sent twice.</mat-hint>
+  </mat-form-field>
+
+  @for (message of otherErrors(); track message) {
+    <p class="form-error" role="alert">{{ message }}</p>
+  }
+
+  <div class="actions">
+    <button mat-flat-button type="submit" [disabled]="sending()">
+      {{ sending() ? 'Simulating…' : 'Simulate event' }}
+    </button>
+  </div>
+</form>

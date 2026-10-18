@@ -1,27 +1,43 @@
-<mat-toolbar class="toolbar">
-  <h1 class="title">World Alerts</h1>
-  <nav class="nav" aria-label="Main">
-    <a mat-button routerLink="/alerts" routerLinkActive="active" ariaCurrentWhenActive="page">
-      Alerts
-    </a>
-    <a mat-button routerLink="/connections" routerLinkActive="active" ariaCurrentWhenActive="page">
-      Connections
-    </a>
-  </nav>
-  <span class="spacer"></span>
-  @if (currentUser.users.error()) {
-    <p class="users-error" role="alert">
-      Could not load users.
-      <button mat-button type="button" (click)="currentUser.users.reload()">Retry</button>
-    </p>
-  } @else {
-    <app-user-switcher
-      [users]="currentUser.users.value()"
-      [selectedId]="currentUser.userId()"
-      (selected)="currentUser.select($event)"
-    />
-  }
-</mat-toolbar>
+<!-- <header> makes the toolbar the banner landmark (axe "region", testing.md S4-12). -->
+<header>
+  <mat-toolbar class="toolbar">
+    <h1 class="title">World Alerts</h1>
+    <nav class="nav" aria-label="Main">
+      <a mat-button routerLink="/alerts" routerLinkActive="active" ariaCurrentWhenActive="page">
+        Alerts
+      </a>
+      <a
+        mat-button
+        routerLink="/connections"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Connections
+      </a>
+      <a mat-button routerLink="/history" routerLinkActive="active" ariaCurrentWhenActive="page">
+        History
+      </a>
+      @if (currentUser.isAdmin()) {
+        <a mat-button routerLink="/admin" routerLinkActive="active" ariaCurrentWhenActive="page">
+          Admin
+        </a>
+      }
+    </nav>
+    <span class="spacer"></span>
+    @if (currentUser.users.error()) {
+      <p class="users-error" role="alert">
+        Could not load users.
+        <button mat-button type="button" (click)="currentUser.users.reload()">Retry</button>
+      </p>
+    } @else {
+      <app-user-switcher
+        [users]="currentUser.users.value()"
+        [selectedId]="currentUser.userId()"
+        (selected)="currentUser.select($event)"
+      />
+    }
+  </mat-toolbar>
+</header>
 
 <main class="main">
   <router-outlet />

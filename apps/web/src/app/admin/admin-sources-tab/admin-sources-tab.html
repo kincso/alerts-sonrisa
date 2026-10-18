@@ -1,0 +1,18 @@
+@if (sources.status() === 'error') {
+  <div class="state-box" role="alert">
+    <p>Could not load the sources.</p>
+    <button mat-stroked-button type="button" (click)="sources.reload()">Try again</button>
+  </div>
+} @else if (!sources.hasValue()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading sources" />
+} @else if (sources.value().length === 0) {
+  <p class="state-box">No sources are registered.</p>
+} @else {
+  <app-source-health-table
+    [sources]="sources.value()"
+    [switchStates]="switchStates()"
+    [pollStates]="pollStates()"
+    (enabledChange)="setEnabled($event)"
+    (poll)="poll($event)"
+  />
+}

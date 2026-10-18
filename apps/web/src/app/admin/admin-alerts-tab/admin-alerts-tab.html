@@ -1,0 +1,12 @@
+@if (failed()) {
+  <div class="state-box" role="alert">
+    <p>Could not load the alerts.</p>
+    <button mat-stroked-button type="button" (click)="reload()">Try again</button>
+  </div>
+} @else if (!alerts.hasValue() || !sources.hasValue()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading all alerts" />
+} @else if (alerts.value().length === 0) {
+  <p class="state-box">No user has an alert yet.</p>
+} @else {
+  <app-admin-alerts-table [alerts]="alerts.value()" [sources]="sources.value()" />
+}

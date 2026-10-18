@@ -1,0 +1,91 @@
+<table class="data-table">
+  <caption class="cdk-visually-hidden">
+    Source health
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">Source</th>
+      <th scope="col">Enabled</th>
+      <th scope="col">Last poll</th>
+      <th scope="col">Last error</th>
+      <th scope="col">Poll</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of rows(); track row.source.id) {
+      <tr>
+        <td data-label="Source">
+          <div>
+            {{ row.source.label }}
+            <span class="muted small">
+              Matches events since
+              <time [attr.datetime]="row.source.enabledAt">{{
+                row.source.enabledAt | date: 'medium'
+              }}</time>
+            </span>
+          </div>
+        </td>
+        <td data-label="Enabled">
+          <div>
+            <mat-slide-toggle
+              [checked]="row.checked"
+              [disabled]="row.switchState?.kind === 'pending'"
+              (change)="enabledChange.emit({ source: row.source, enabled: $event.checked })"
+            >
+              {{ row.checked ? 'On' : 'Off'
+              }}<span class="cdk-visually-hidden">: {{ row.source.label }}</span>
+            </mat-slide-toggle>
+            <p class="note" aria-live="polite">
+              @if (row.switchState?.kind === 'pending') {
+                Saving…
+              }
+            </p>
+            @if (row.switchState; as state) {
+              @if (state.kind === 'error') {
+                <p class="note error" role="alert">{{ state.message }}</p>
+              }
+            }
+          </div>
+        </td>
+        <td data-label="Last poll">
+          <div>
+            @if (row.source.lastPollAt) {
+              <time [attr.datetime]="row.source.lastPollAt">{{
+                row.source.lastPollAt | date: 'medium'
+              }}</time>
+            } @else {
+              <span class="muted">Not polled yet</span>
+            }
+          </div>
+        </td>
+        <td data-label="Last error">
+          <div>
+            @if (row.source.lastError) {
+              <span class="error">{{ row.source.lastError }}</span>
+            } @else {
+              <span class="muted">None</span>
+            }
+          </div>
+        </td>
+        <td data-label="Poll">
+          <div>
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="row.pollState?.kind === 'pending'"
+              (click)="poll.emit(row.source)"
+            >
+              Poll now<span class="cdk-visually-hidden">: {{ row.source.label }}</span>
+            </button>
+            <p class="note" aria-live="polite">{{ row.pollNote }}</p>
+            @if (row.pollState; as state) {
+              @if (state.kind === 'error') {
+                <p class="note error" role="alert">{{ state.message }}</p>
+              }
+            }
+          </div>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

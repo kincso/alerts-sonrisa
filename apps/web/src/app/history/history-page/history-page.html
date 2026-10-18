@@ -1,0 +1,40 @@
+<section class="page" aria-labelledby="history-title">
+  <header class="header">
+    <div>
+      <h2 id="history-title">History</h2>
+      <p class="intro">Every notification sent to your connections, newest first.</p>
+    </div>
+    @if (deliveries.hasValue()) {
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="deliveries.isLoading()"
+        (click)="deliveries.reload()"
+      >
+        Refresh
+      </button>
+    }
+  </header>
+
+  @if (deliveries.status() === 'idle') {
+    <p>Pick a user in "Acting as" to see their history.</p>
+  } @else if (deliveries.status() === 'error') {
+    <div class="state-box" role="alert">
+      <p>Could not load your history.</p>
+      <button mat-stroked-button type="button" (click)="deliveries.reload()">Try again</button>
+    </div>
+  } @else if (!deliveries.hasValue()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading history" />
+  } @else {
+    @if (deliveries.isLoading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Refreshing history" />
+    }
+    @if (deliveries.value().length === 0) {
+      <div class="state-box">
+        <p>Nothing has been sent to you yet. Matches and "Send test" results show up here.</p>
+      </div>
+    } @else {
+      <app-delivery-table caption="Your notification history" [deliveries]="deliveries.value()" />
+    }
+  }
+</section>

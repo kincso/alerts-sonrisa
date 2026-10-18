@@ -1,0 +1,13 @@
+.status {
+  font-weight: 500;
+}
+
+.status-failed,
+.error {
+  color: var(--mat-sys-error);
+}
+
+.error {
+  display: block;
+  font: var(--mat-sys-body-small);
+}

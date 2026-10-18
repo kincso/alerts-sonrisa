@@ -1,4 +1,5 @@
 import {
+  type AdminDeliveryView,
   type ChannelConnection,
   type DeliveryStatus,
   type DeliveryView,
@@ -73,8 +74,10 @@ export function finishDelivery(
 const DELIVERY_STATUSES: readonly DeliveryStatus[] = ['pending', 'sent', 'dry-run', 'failed'];
 
 const SELECT_VIEW = `
-  SELECT d.*, e.source_id, e.title, e.url, e.severity, e.occurred_at
-  FROM deliveries d LEFT JOIN events e ON e.id = d.event_id`;
+  SELECT d.*, e.source_id, e.title, e.url, e.severity, e.occurred_at, u.name AS user_name
+  FROM deliveries d
+  LEFT JOIN events e ON e.id = d.event_id
+  JOIN users u ON u.id = d.user_id`;
 
 function eventOf(row: Row): DeliveryView['event'] {
   const id = optionalText(row, 'event_id');
@@ -116,4 +119,12 @@ export function listUserDeliveries(db: Db, userId: string): DeliveryView[] {
 export function findDeliveryView(db: Db, id: string): DeliveryView | undefined {
   const row = db.prepare(`${SELECT_VIEW} WHERE d.id = ?`).get(id);
   return row ? toView(row) : undefined;
+}
+
+/** The whole log for the admin (A9, A16), newest first, with each row's user. */
+export function listAllDeliveries(db: Db): AdminDeliveryView[] {
+  return db
+    .prepare(`${SELECT_VIEW} ORDER BY d.created_at DESC, d.rowid DESC`)
+    .all()
+    .map((row) => ({ ...toView(row), userName: text(row, 'user_name') }));
 }
