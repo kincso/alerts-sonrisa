@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -23,4 +23,8 @@ export class HistoryPage {
     params: () => this.currentUser.userId(),
     stream: () => this.deliveriesApi.mine(),
   });
+
+  // No user id yet: the user list is loading, has failed (the shell shows that error), or has no user.
+  protected readonly usersLoading = computed(() => this.currentUser.users.isLoading());
+  protected readonly usersFailed = computed(() => this.currentUser.users.status() === 'error');
 }

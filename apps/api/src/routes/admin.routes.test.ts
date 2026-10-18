@@ -404,7 +404,11 @@ describe('admin views and switches (S4)', () => {
       const on = await enable(true);
       expect(on.enabled).toBe(true);
       expect(on.enabledAt > OLD).toBe(true);
-      expect((await enable(true)).enabledAt).toBe(on.enabledAt);
+
+      // A fixed value, so a reset to now() can't pass by landing in the same millisecond.
+      const KEPT = '2026-02-01T00:00:00.000Z';
+      api.db.prepare("UPDATE sources SET enabled_at = ? WHERE id = 'fake'").run(KEPT);
+      expect((await enable(true)).enabledAt).toBe(KEPT);
     });
 
     it('a source PATCH is 404 for an unknown id and 400 for a bad body', async () => {

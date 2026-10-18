@@ -45,6 +45,7 @@ Admin responses (S4, `admin.ts`): `AdminAlertView` (`Alert` + `ownerName`, `conn
 interface Source {
   id: SourceId;
   label: string;
+  fixedSeverity?: Severity;                         // every item gets this severity (S3-3)
   fetchRaw(signal: AbortSignal): Promise<string>;   // I/O only
   normalise(raw: string): NewEvent[];               // pure; severity is set here
 }
@@ -62,7 +63,7 @@ interface NotificationChannel {
 
 **Adding a channel (e.g. Teams):** write one adapter file that implements `NotificationChannel`, add one line to the channel registry, and add one `channel_types` seed row. `GET /channels` exposes its fields and the web builds the connection form from them. The matcher, poller and dispatcher stay unchanged. The fake-channel component test (S1) backs this up.
 
-**Adding a source:** write one adapter that implements `Source` and add one registry entry plus a `sources` seed row. Source-specific parsing and severity logic stay in the adapter's `normalise` (D1).
+**Adding a source:** write one adapter that implements `Source` and add one registry entry plus a `sources` seed row. Source-specific parsing and severity logic stay in the adapter's `normalise` (D1). If `normalise` gives every item the same severity, set `fixedSeverity`: the alert form and the simulate form then lock Severity to it (decisions.md S3-2, S3-3).
 
 The matcher only sees `Event` and `Alert`. The dispatcher looks up `registry.get(connection.type)` and knows no specific channel.
 
@@ -77,6 +78,7 @@ flowchart LR
   P --> N[Normalise<br/>Source.normalise]
   N --> D[Dedupe<br/>INSERT … ON CONFLICT DO NOTHING]
   D -->|new events only| B{occurredAt ≥<br/>source.enabled_at?}
+  D -.->|simulate, existing sourceEventId:<br/>the stored event again, S3-1| B
   B -->|no| X[stored, not matched]
   B -->|yes| M[Match<br/>matchAlert]
   M --> C[Claim delivery row<br/>status = pending]

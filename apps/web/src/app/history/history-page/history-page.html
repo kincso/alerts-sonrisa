@@ -17,7 +17,11 @@
   </header>
 
   @if (deliveries.status() === 'idle') {
-    <p>Pick a user in "Acting as" to see their history.</p>
+    @if (usersLoading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Loading history" />
+    } @else if (!usersFailed()) {
+      <p>Pick a user in "Acting as" to see their history.</p>
+    }
   } @else if (deliveries.status() === 'error') {
     <div class="state-box" role="alert">
       <p>Could not load your history.</p>

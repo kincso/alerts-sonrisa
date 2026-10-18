@@ -22,10 +22,6 @@
   @if (deliveries.value().length === 0) {
     <p class="state-box">Nothing has been sent yet.</p>
   } @else {
-    <app-delivery-table
-      caption="Delivery log"
-      [deliveries]="deliveries.value()"
-      [showUser]="true"
-    />
+    <app-delivery-table caption="Delivery log" [deliveries]="deliveries.value()" />
   }
 }

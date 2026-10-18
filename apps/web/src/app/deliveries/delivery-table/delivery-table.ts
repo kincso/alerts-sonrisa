@@ -1,10 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import type { DeliveryStatus, DeliveryView } from '@alerts/shared';
+import type { AdminDeliveryView, DeliveryStatus, DeliveryView } from '@alerts/shared';
 import { severityLabel } from '../../alerts/severity-label';
-
-/** A history row; the admin log adds the user's name (decisions.md S4-2). */
-export type DeliveryRow = DeliveryView & { userName?: string };
 
 const STATUS_LABELS: Record<DeliveryStatus, string> = {
   pending: 'Pending',
@@ -22,14 +19,17 @@ const STATUS_LABELS: Record<DeliveryStatus, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DeliveryTable {
-  readonly deliveries = input.required<readonly DeliveryRow[]>();
+  /** History rows, or admin log rows, which add the user's name (decisions.md S4-2). */
+  readonly deliveries = input.required<readonly DeliveryView[] | readonly AdminDeliveryView[]>();
   readonly caption = input.required<string>();
-  /** Adds a User column (admin log). */
-  readonly showUser = input(false);
+
+  /** The User column follows the data: only admin log rows have `userName`. */
+  protected readonly showUser = computed(() => this.deliveries().some((d) => 'userName' in d));
 
   protected readonly rows = computed(() =>
-    this.deliveries().map((delivery) => ({
+    this.deliveries().map((delivery: DeliveryView | AdminDeliveryView) => ({
       delivery,
+      userName: 'userName' in delivery ? delivery.userName : undefined,
       alert: delivery.kind === 'test' ? 'Test' : (delivery.alertName ?? 'Deleted alert'),
       severity: delivery.event ? severityLabel(delivery.event.severity) : undefined,
       status: STATUS_LABELS[delivery.status],

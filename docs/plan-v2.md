@@ -150,7 +150,7 @@ Tasks (BE)
 - USGS adapter: magnitude → severity bands, with the band edges logged in `decisions.md` (A1).
 - BBC adapter: always `medium`, set only in its normalise step (D1).
 - Poller:
-  - `POLL_INTERVAL_MS` (default 3 min per A5, 15s in dev);
+  - `POLL_INTERVAL_MS` (default 3 min per A5; dev sets 15s in `.env`, decisions.md S2-3);
   - skip if a poll is already running;
   - skip disabled sources;
   - unique on `sourceId + sourceEventId` (A7);
@@ -170,7 +170,7 @@ Commit: `feat(api): USGS and BBC source adapters with interval poller`
 ### S3 – Alerts + matcher + delivery pipeline (end-to-end) · 2.35h
 **Goal:** event → matching alert → email/Slack → delivery log, using endpoints that already exist (S1) or are built here.
 
-> **Reminder before starting S3 (F6, decisions.md S2-6):** take the second BBC snapshot (`curl -o process/f6/bbc-world-<UTC time>.xml https://feeds.bbci.co.uk/news/world/rss.xml`), compare its guids with snapshot 1 in `process/f6/`, and record the result in testing.md S2-12.
+> **Reminder before starting S3 (F6, decisions.md S2-6):** take the second BBC snapshot (`curl -o process/f6/bbc-world-<UTC time>.xml https://feeds.bbci.co.uk/news/world/rss.xml`), compare its guids with snapshot 1 in `process/f6/`, and record the result in testing.md S2-12. _Done 2026-10-18 in S4, not before S3 (decisions.md S2-6); F6 is closed._
 
 Tasks
 - **BE (1.0):**
@@ -219,7 +219,7 @@ Tasks
 
 Validation
 - As a user: the Admin link is hidden; `/admin` is blocked by the guard; the API returns 403.
-- As admin: disable BBC → "poll now" skips it; disable Slack → a new simulated match skips Slack connections; simulate an event → it appears in the admin log and in the user's history.
+- As admin: disable BBC → "poll now" skips it; disable Slack → a new simulated match skips Slack connections; simulate an event → it appears in the admin log (after Refresh) and in the user's history.
 - The axe score is recorded in `testing.md`.
 
 Commits, in this order (CLAUDE.md "Testing", S3 review C1):
@@ -267,6 +267,7 @@ Slices S0–S5.
 | General API input validation | v1 Phase 4 | Reduced to channel `validate()` + required fields | ~0.15h | None |
 | Repository round-trip tests | v1 Phase 1 | Out of scope (tests cover the adapters, matcher, dispatcher and 2 components) | ~0.15h | None (matches the out-of-scope test line) |
 | CI pipeline (GitHub Actions) | v2 instructions | Out of scope; local `npm test` gate only | ~0.25h | None (D4; already out of scope) |
+| Admin delivery log reloads by itself when its tab is reopened (S4 review M1) | S4 | Out of scope; Refresh button only (DoD 5) | ~0.1h | None |
 | Separate API phase | v1 Phase 4 | Removed; endpoints are built inside their slice | – | None |
 
 ### Out of scope
@@ -282,7 +283,7 @@ After cloning, a reviewer with the pinned Node version can:
 2. Switch between two users and an admin with the switcher, which is labelled as a mock.
 3. Add an email and a Slack connection through the generated form, and use "Send test": the email gives a preview link, and Slack gives a real message or a visible dry run.
 4. Create, edit, pause and delete an alert.
-5. As admin, simulate a matching event → see it in the user's history and the admin delivery log. Simulating it again with the same `sourceEventId` sends nothing.
+5. As admin, simulate a matching event → see it in the user's history and the admin delivery log (press Refresh on the log; it loads once when `/admin` opens, decisions.md S4-5). Simulating it again with the same `sourceEventId` sends nothing.
 6. See source health showing either recent USGS/BBC polls or a visible error. Disabling a source or a channel takes effect.
 7. As a user, not be able to open the admin view (guard + 403).
 8. Run `npm test` and see it pass.
