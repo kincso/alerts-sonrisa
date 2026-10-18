@@ -365,6 +365,6 @@ Never cut: the pipeline, the generated form (A12), simulate event (A18), the adm
 - ~~**F5:** keyword any-of.~~ Closed by D8 (2026-10-17): any-of. A per-alert any/all choice is Stretch.
 - ~~**A13:** what happens to alerts when a connection is deleted.~~ Closed by D6 (2026-10-17): the delete is blocked while alerts use the connection.
 
-- **F6:** whether the BBC `<guid>` `#n` suffix changes when a story is updated. The MVP uses the full guid (DS9); verify it in S2.
+- ~~**F6:** whether the BBC `<guid>` `#n` suffix changes when a story is updated.~~ Closed 2026-10-18: it does change (testing.md S2-12), so the `#n` suffix is stripped (decisions.md DS9, revised).
 
 These change no Group A decision, but `assumptions.md` should record them before or during the slice that needs them.
