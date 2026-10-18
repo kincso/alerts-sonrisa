@@ -202,4 +202,7 @@ Attribution: notifications name the source (A25). The BBC feed's `<copyright>` p
 - **DS6, DS7:** `GET /users` and the preview links are public. Mock-level only.
 - A crash mid-send leaves a delivery `pending` for good (no retry, A16).
 - Still open in plan-v2: **F1** (A3 wording), **F2** (region filter), **F3** (A14 "threshold" wording). None of them affects this design.
-- Budget: DS4 and DS8 each add ~0.15h, taken from the 0.45h buffer, which leaves ~0.15h.
+- Budget: DS4 and DS8 each add ~0.15h, taken from the 0.45h buffer, which leaves ~0.15h. _Outcome (S5):_ actual time stayed well under the estimate (plan-v2 "Actual"), so no cut was needed.
+- **(added in S5)** Switching Admin → user while on `/admin` re-sends the admin tabs' requests as the new user (403 + "Admins only."); UI only, the server check holds (testing.md Known issues).
+- **(added in S5)** The production initial bundle is 624 kB, over the 500 kB budget warning (testing.md S5-4).
+- The README "Known limitations" and "With another week" sections are the reviewer-facing list of these points.

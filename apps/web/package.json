@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "preview": "ng serve --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false",
     "typecheck": "ngc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit"
