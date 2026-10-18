@@ -25,7 +25,7 @@ export class AdminSourcesTab {
   private readonly currentUser = inject(CurrentUser);
 
   protected readonly sources = rxResource({
-    params: () => this.currentUser.userId(),
+    params: () => this.currentUser.adminId(),
     stream: () => this.adminApi.sources(),
   });
   protected readonly switchStates = signal<SwitchStates>({});

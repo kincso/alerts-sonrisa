@@ -20,11 +20,11 @@ export class AdminAlertsTab {
   private readonly currentUser = inject(CurrentUser);
 
   protected readonly alerts = rxResource({
-    params: () => this.currentUser.userId(),
+    params: () => this.currentUser.adminId(),
     stream: () => this.adminApi.alerts(),
   });
   protected readonly sources = rxResource({
-    params: () => this.currentUser.userId(),
+    params: () => this.currentUser.adminId(),
     stream: () => this.alertsApi.sources(),
   });
 

@@ -35,7 +35,7 @@ export class AdminSimulateTab {
   private readonly currentUser = inject(CurrentUser);
 
   protected readonly sources = rxResource({
-    params: () => this.currentUser.userId(),
+    params: () => this.currentUser.adminId(),
     stream: () => this.alertsApi.sources(),
   });
   protected readonly sending = signal(false);

@@ -19,7 +19,7 @@ export class AdminDeliveriesTab {
   private readonly currentUser = inject(CurrentUser);
 
   protected readonly deliveries = rxResource({
-    params: () => this.currentUser.userId(),
+    params: () => this.currentUser.adminId(),
     stream: () => this.adminApi.deliveries(),
   });
 }

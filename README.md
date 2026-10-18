@@ -167,24 +167,19 @@ Most important first.
      floating Material labels could not be measured (S4-12);
    - the admin tabs' loading and empty states were not seen in the browser
      (S4-10).
-6. **Switching from Admin to a user while on the Admin page** sends that
-   page's `/api/admin/*` requests once more as the new user before the app
-   leaves the page. The API answers 403 and an "Admins only." message pops up
-   (docs/testing.md, Known issues). The server check works; the extra requests
-   and the message are a UI bug.
-7. **The admin delivery log does not refresh by itself** when its tab is
+6. **The admin delivery log does not refresh by itself** when its tab is
    reopened. Use Refresh (decisions.md S4-5). The history and the log have no
    paging (sized for a demo, A22).
-8. **Build warning:** the initial bundle is 624 kB, over Angular's 500 kB
+7. **Build warning:** the initial bundle is 624 kB, over Angular's 500 kB
    budget warning. The build still succeeds (docs/testing.md S5-4).
-9. **`npm install` warnings on npm 11:** "install-scripts … not yet covered by
+8. **`npm install` warnings on npm 11:** "install-scripts … not yet covered by
    allowScripts" for esbuild, lmdb, msgpackr-extract and @parcel/watcher. They
    are harmless: install, build, start and tests all work (docs/testing.md,
    Known issues).
-10. **`npm run preview` is not a static deployment.** It runs the production
+9. **`npm run preview` is not a static deployment.** It runs the production
    build through Angular's server; nothing serves `dist/` with the API in one
    process (decisions.md S5-1).
-11. **Not built** (plan-v2 Scope): no CI pipeline, only the local `npm test`
+10. **Not built** (plan-v2 Scope): no CI pipeline, only the local `npm test`
     gate (D4); no region filter on alerts (F2); no cooldown (D3); no market
     source.
 
@@ -216,4 +211,4 @@ still Partial.
 7. **Smarter news severity** and **a market source** (Stretch): both are new
    or changed adapters only, behind the existing `Source` interface.
 8. **Bundle size:** find what pulls 624 kB into the initial bundle and move it
-   behind lazy routes or `@defer` (limitation 8).
+   behind lazy routes or `@defer` (limitation 7).

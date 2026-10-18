@@ -45,6 +45,12 @@ export class CurrentUser {
   readonly userId = computed(() => this.user()?.id);
   readonly isAdmin = computed(() => this.user()?.role === 'admin');
 
+  /**
+   * Key for admin-only resources: the id while the user is an admin, otherwise
+   * undefined, so they go idle instead of reloading as a user (decisions.md S5-2).
+   */
+  readonly adminId = computed(() => (this.isAdmin() ? this.userId() : undefined));
+
   select(id: string): void {
     this.selectedId.set(id);
     storeId(id);
